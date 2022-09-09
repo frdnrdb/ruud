@@ -1,0 +1,25 @@
+{
+  "name": "ruud",
+  "version": "1.0.3",
+  "description": "the player who serves",
+  "author": "frdnrdb <froden@gmail.com>",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/index.js",
+  "repository": "frdnrdb/ruud",
+  "homepage": "https://github.com/frdnrdb/ruud/",
+  "keywords": [
+    "minimal",
+    "server",
+    "web",
+    "http",
+    "rest",
+    "restful",
+    "router",
+    "app",
+    "api"
+  ],
+  "engines": {
+    "node": ">= 13.2.0"
+  }
+}
