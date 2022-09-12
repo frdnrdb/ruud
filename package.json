@@ -1,11 +1,14 @@
 {
   "name": "ruud",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "the player who serves",
   "author": "frdnrdb <froden@gmail.com>",
   "license": "MIT",
   "type": "module",
   "main": "src/index.js",
+  "bin": {
+    "ruud": "src/bin.js"
+  },
   "repository": "frdnrdb/ruud",
   "homepage": "https://github.com/frdnrdb/ruud/",
   "keywords": [

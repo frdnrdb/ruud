@@ -1,4 +1,4 @@
-import { APP_NAME, APP_VERSION, CLIENT_NAME, CLIENT_VERSION, protocols, log, merge, exit } from './util.js';
+import { protocols, merge, exit, startupMessage, log } from './util.js';
 
 import context from './context.js';
 import router from './router.js';
@@ -57,7 +57,15 @@ const srvr = settings => {
 
 // ---> init server
 
-const updateRouter = router.update;
+const routes = router.update;
+
+const expose = {
+    routes,
+    resolveFolder,
+    exit,
+    fetch,
+    log
+};
 
 const ruud = input => {
 
@@ -70,16 +78,9 @@ const ruud = input => {
     const settings = merge({}, preset, config);
     const { port, host, routes } = settings;
 
-    updateRouter(routes);
+    router.update(routes);
 
-    log.call(
-        { type: 'box', color: 'magenta' },
-        `${APP_NAME} @ ${APP_VERSION}`,
-        '---',
-        `${CLIENT_NAME} @ ${CLIENT_VERSION}`,
-        '---',
-        `http://${host}:${port}`,
-    );
+    startupMessage(host, port);
 
     const instance = srvr(settings);
     const sockets = new Set();
@@ -89,23 +90,27 @@ const ruud = input => {
     /*
         graceful shut-down
     */
-    exit.add(async function() {
+    exit.add('server', async function() {
         for (const socket of sockets) {
             socket.destroy();
             sockets.delete(socket);
+            socket.unref();
         }
-        return new Promise(r => instance.close(() => r(APP_NAME)));
+        return new Promise(r => instance.close(r));
     });
     
-    return { 
-        instance,
-        routes: updateRouter
-    };
+    Object.assign(expose, { instance });
+    
+    return expose;
 };
 
+Object.assign(ruud, expose);
+
 export const server = input => ruud(input);
-export { updateRouter as routes };
-export { fetch as fetch };
+export { routes as routes };
 export { resolveFolder as resolveFolder };
+export { exit as exit };
+export { fetch as fetch };
+export { log as log };
 
 export default ruud;

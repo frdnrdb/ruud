@@ -22,7 +22,9 @@ const relative = ({ referer, host }, session, url) => {
 };
 
 export default async (handler, settings, req, res) => {
-    log(req.url, process.hrtime()[1]);
+    DEV && req.connection.ref();
+    
+    log(req.url);
 
     const { fallback, fileSizeLimit } = settings;
 
@@ -81,6 +83,9 @@ export default async (handler, settings, req, res) => {
     
         // add to context for after-function
         ctx.payload = payload;
+
+        // avoid keepalive at server restart
+        DEV && req.connection.unref();
     }
 
     return handler(ctx, done, settings);

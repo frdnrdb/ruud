@@ -28,7 +28,7 @@ const redirect = (res, Location, status = 301) => {
 }
 
 const error = (req, res, object, status = 404) => {
-    log('error', status, object, req.url);
+    log.call('red', 'error', status, object, req.url);
     end(req, res, object.error || object.message || object, object.code || status);
 }
 

@@ -7,9 +7,7 @@
 const DEFAULT_COLOR = 34;
 const PREFIX = '⟶  ';
 const BOX_PADDING = 3;
-
 const BORDER = [ '┌', '┐', '┘', '└', '─', '│', ' ', '├', '┤' ];
-const [ TL, TR, BR, BL, H, V, S, ML, MR ] = BORDER;
 
 const map = {
     blackbg: 40,
@@ -36,7 +34,9 @@ const setColor = n => n instanceof Number
     ? n 
     : (typeof n === 'string' && map[n]) || DEFAULT_COLOR;
 
-const makeBox = (arg, args, color) => {
+const makeBox = (arg, args, color, boxColor = 35) => {
+    const [ TL, TR, BR, BL, H, V, S, ML, MR ] = BORDER.map(c => colorize(boxColor, c));
+
     const content = [arg, ...args].filter(n => typeof n === 'string' && n);
     const max = Math.max.apply(null, content.map(str => str.length));
     const width = max + BOX_PADDING * 2;
@@ -54,18 +54,15 @@ const makeBox = (arg, args, color) => {
     return [`${TL}${border}${TR}`, ...content.map(boxLine), `${BL}${border}${BR}\n`].map((str, i) => (!i ? '' : '\n') + tab + str);
 };
 
-export default DEV => {
-    DEV && console.log('\x1Bc'); // clear console 
+export default active => function(arg, ...args) {
+    if (!active || /^\/favicon/.test(arg)) return;
+    if (this === null) return console.log('\x1Bc'); // clear console
 
-    return function(arg, ...args) {
-        if (!DEV || /favicon/.test(arg)) return;
+    const isObject = typeof this === 'object';
+    const isBox = isObject && this.type === 'box';
+    const color = setColor(isObject ? this.color : this);
 
-        const isObject = typeof this === 'object';
-        const isBox = isObject && this.type === 'box';
-        const color = setColor(isObject ? this.color : this);
+    const content = isBox ? makeBox(arg, args, color) : [ PREFIX, colorize(color, arg), ...args.filter(Boolean) ];
 
-        const content = isBox ? makeBox(arg, args, color) : [ PREFIX, colorize(color, arg), ...args.filter(Boolean) ];
-
-        console.log(...content);
-    };
-}
+    console.log(...content);
+};

@@ -5,21 +5,28 @@ const parsed = {};
 
 const parsedRoute = route => {
     return parsed[route] || (() => {
-        const props = [];
-        const match = new RegExp(`^${
+        const o = {
+            match: '',
+            props: [],
+            method: 0
+        };
+
+        route = route.replace(/^\/(GET|POST|PUT)/, (_, m) => {
+            o.method = m;
+            return '';
+        });
+
+        o.match = new RegExp(`^${
             route
                 .replace(/\/(:)?([^/?]+)(\?)?/g, (_, isProp, param, optional) => {
-                    props.push(isProp && param);
+                    o.props.push(isProp && param);
                     if (!isProp) return `\/${param}`;
                     const regex = '[^\/]+';
                     return optional ? `(\/${regex})?` : `\/${regex}`;
                 })
         }$`);
     
-        return parsed[route] = {
-            match,
-            props
-        };
+        return parsed[route] = o;
     })();
 };
 
@@ -35,7 +42,9 @@ const router = ctx => {
     }
 
     for (const [ route, func ] of Object.entries(routes)) {
-        const { match, props } = parsedRoute(route);    
+        const { method, match, props } = parsedRoute(route);    
+
+        if (method && method !== ctx.method) continue;
         if (!match.test(path)) continue;
 
         ctx.props = Object.fromEntries(

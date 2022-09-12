@@ -1,36 +1,22 @@
-import { readFileSync } from 'fs';
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
-
 import httpProtocol from 'http';
 import httpsProtocol from 'https';
 
-import logger from './log.js';
-import env from './env.js';
 import exitHandler from './exit.js';
+import logger from './log.js';
+import prepareDev from './dev.js';
 
 // --->
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const DEV =  process.env.NODE_ENV !== 'production';
 
-const DEV = process.env.NODE_ENV !== 'production';
-
-const { name, version } = (DEV && JSON.parse(readFileSync(`${__dirname}/../package.json`))) || {};
-
-const APP_NAME = name;
-const APP_VERSION = version;
-
-const CLIENT_NAME = process.env.npm_package_name;
-const CLIENT_VERSION = process.env.npm_package_version;
-
-// logger
+// dev logger 
 const log = logger(DEV);
-
-// dotenv parser
-DEV && env(log.bind('blackbg'));
 
 // exit handler 
 const exit = exitHandler(log);
+
+// dev dotenv parser + restart handler
+const startupMessage = prepareDev(DEV, log, exit);
 
 // -->
 
@@ -71,18 +57,12 @@ const flatten = (obj, sep = '', pre = '', flat = {}, recursive, k = '') => {
 
 export {
     DEV,
-
-    APP_NAME,
-    APP_VERSION,
-    CLIENT_NAME,
-    CLIENT_VERSION,
-
-    __dirname,
     protocols,
 
     exit,
-
     log,
+    startupMessage,
+
     merge,
     flatten
 };
