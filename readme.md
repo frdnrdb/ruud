@@ -106,9 +106,8 @@ routes({})
 
 #### default routes
 ```js
-'/' // serve the servants!
 '/favicon.ico' // 204 no content
-'/err' // array of registered errors
+'/err' // array of caught errors
 ```
 
 #### route cache (memory)
@@ -200,17 +199,22 @@ exit.add('mongodb users', () => mongoose.connection.close())
 
 #### fetch method
 ```js
-// also included in the context object
+/*
+    • also included in the context object
+    • does not return a promise like native fetch
 
+    optional options: {
+        method: String,
+        headers: Object,
+        body: String,
+        raw: Boolean – return raw server response
+        buffer: Boolean - return as Buffer
+    }
+*/
 import { fetch } from 'ruud';
 
-const json = await fetch('https://some.api.com');
-
-const res = await fetch('https://some.api.com', {
-    method: 'POST',
-    headers: {},
-    body: JSON.stringify(json)
-})
+const json = await fetch('https://api.com');
+const html = await fetch('https://google.com');
 ```
 
 #### dev logger

@@ -20,9 +20,9 @@ const getProtocol = url => {
 
 const statusOk = code => Math.floor(code / 100) === 2;
 
-const parseResponse = (res, body, returnBuffer) => {
+const parseResponse = (res, body, buffer) => {
     try {
-        return returnBuffer
+        return buffer
             ? Buffer.concat(body)
             : /json/.test(res.headers['content-type']) 
                 ? JSON.parse(body)
@@ -38,31 +38,31 @@ const fetch = (url = '', options = {}, streamHandler) => new Promise((resolve, r
 
     const { 
         method = 'GET',
-        headers: headersPre = {},
+        headers: inputHeaders = {},
         body,
 
         silent,
-        returnRaw,
-        returnBuffer,
+        raw,
+        buffer,
     } = options;
 
     const headers = Object.assign(
         { Accept: '*/*' },
-        headersPre
+        inputHeaders
     );
 
     const fetchHandler = res => {
-        if (returnRaw) {
+        if (raw) {
             return resolve(res);
         }
 
-        !returnBuffer && res.setEncoding('utf8');
+        !buffer && res.setEncoding('utf8');
 
-        let body = returnBuffer ? [] : '';
+        let body = buffer ? [] : '';
 
         res.on('error', ({ message }) => reject({ error: message }));
-        res.on('data', chunk => returnBuffer ? body.push(chunk) : body += chunk);
-        res.on('end', () => resolve(parseResponse(res, body, returnBuffer)));
+        res.on('data', chunk => buffer ? body.push(chunk) : body += chunk);
+        res.on('end', () => resolve(parseResponse(res, body, buffer)));
     };
 
     const handler = res => {
@@ -95,8 +95,8 @@ const fetch = (url = '', options = {}, streamHandler) => new Promise((resolve, r
     req.on('error', error => resolve({ error: error.message }));
 });
 
-const stream = (serverRes, url, returnBuffer) => fetch(url, {}, (resolve, reject, res) => {
-    if (returnBuffer) return resolve(res);
+const stream = (serverRes, url, buffer) => fetch(url, {}, (resolve, reject, res) => {
+    if (buffer) return resolve(res);
 
     try {
         serverRes.setHeader('Content-Type', res.headers['content-type']);
