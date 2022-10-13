@@ -1,7 +1,10 @@
 const log = [];
 
 export default {
-  add({ name, message, cause, stack, code }, { url }) {
+  add(err, { url }) {
+    console.error(err);
+    
+    const { name, message, cause, stack, code } = err;
     log.push({
       url,
       name,

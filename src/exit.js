@@ -10,19 +10,19 @@ export default log => {
     const exitQueue = [];
 
     const stop = async () => {
-        log.call('magenta', 'gracefully shutting down');
+        log('<magenta>gracefully shutting down</magenta>');
 
         while (exitQueue.length) {
             const [ name, func ] = exitQueue.shift();
             await func();
-            log.call('cyan', name, 'shut down');
+            log(`<magenta>${name} shut down</magenta>`);
         }
     };
 
-    const handle = signal => async (err, message) => {        
+    const handle = async (signal, message) => {        
         if (signal === 'SIGINT') process.stdout.write('\b\b'); // remove ^C
 
-        log.call('magenta', signal, err, message);
+        log(`<red>${signal}</red>`, message);
 
         if (/^(SIG)/.test(signal) || /EADDR/.test(message)) {
             await stop();
@@ -30,7 +30,7 @@ export default log => {
         }
     };
 
-    signals.forEach(signal => process.on(signal, handle(signal)));
+    signals.forEach(signal => process.on(signal, handle));
 
     return {
         add(name, func) {

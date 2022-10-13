@@ -25,7 +25,6 @@ const preset = {
         default routes unless specified otherwise
     */
     routes: {
-        '/': () => 'serve the servants!',
         '/favicon.ico': ({ status }) => status(204),
         '/err': () => errors.get()
     },
@@ -78,6 +77,7 @@ const ruud = input => {
     const settings = merge({}, preset, config);
     const { port, host, routes } = settings;
 
+    if (!routes) preset.routes['/'] = () => 'serve the servants!';
     router.update(routes);
 
     startupMessage(host, port);

@@ -20,19 +20,18 @@ export default (DEV, log, exit) => {
   const changedFile = restarted();
 
   const startupMessage = (host, port) => {
-    !changedFile && log.call(
-      { type: 'box', color: 'yellow' },
-      `${APP_NAME} @ ${APP_VERSION}`,
-      '---',
-      ...(parsedEnvVars.length ? ['dotenv parsed:', ...parsedEnvVars, '---'] : []),
-      `${CLIENT_NAME} @ ${CLIENT_VERSION}`,
-      '---',
-      `http://${host}:${port}`    
-    );
+    !changedFile && log(`
+      <box yellow>
+        ${CLIENT_NAME} @ ${CLIENT_VERSION}
+        <hr>
+        ${parsedEnvVars.length ? ['<reset>process.env</reset>', ...parsedEnvVars.map(n => `<magenta>${n}</magenta>`), '<hr>'].join('\n') : []}
+        <cyan>${APP_NAME} @ ${APP_VERSION}</cyan> <reset>serving</reset> <cyan>http://${host}:${port}</cyan>
+      </box>
+    `);
   };
 
   changedFile 
-    ? log.call('cyan', 'server restarted', changedFile, 'changed')
+    ? log('<cyan>server restarted</cyan>', '<yellow>changed</yellow>', changedFile)
     : log.call(null); 
 
   env(!changedFile && log);

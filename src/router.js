@@ -1,38 +1,7 @@
 import context from './context.js';
 import { merge, flatten } from './util.js';
 
-const parsed = {};
-
-const parsedRoute = route => {
-    return parsed[route] || (() => {
-        const o = {
-            match: '',
-            props: [],
-            method: 0
-        };
-
-        route = route.replace(/^\/(GET|POST|PUT)/, (_, m) => {
-            o.method = m;
-            return '';
-        });
-
-        o.match = new RegExp(`^${
-            route
-                .replace(/\/(:)?([^/?]+)(\?)?/g, (_, isProp, param, optional) => {
-                    o.props.push(isProp && param);
-                    if (!isProp) return `\/${param}`;
-                    const regex = '[^\/]+';
-                    return optional ? `(\/${regex})?` : `\/${regex}`;
-                })
-        }$`);
-    
-        return parsed[route] = o;
-    })();
-};
-
 const router = ctx => {
-    if (router.inactive) return;
-
     const { routes } = router;
     const { url, params } = ctx;
     const path = params.length ? '/' + params.join('/') : url.split('?')[0];
@@ -41,8 +10,7 @@ const router = ctx => {
         return routes[path];
     }
 
-    for (const [ route, func ] of Object.entries(routes)) {
-        const { method, match, props } = parsedRoute(route);    
+    for (const { method, match, props, func } of router.parsed) {
 
         if (method && method !== ctx.method) continue;
         if (!match.test(path)) continue;
@@ -57,12 +25,45 @@ const router = ctx => {
     }
 };
 
-router.inactive = true;
+const parse = routes => router.parsed = Object.entries(routes)
+    .reduce((parsed, [ route, func ]) => {
+        const o = {
+            match: '',
+            props: [],
+            method: 0,
+            func
+        };
+
+        route = route.replace(/^\/(GET|POST|PUT)/, (_, m) => {
+            o.method = m;
+            return '';
+        });
+
+        o.route = route;
+
+        o.match = new RegExp(`^${
+            route
+                .replace(/\/(:)?([^/?]+)(\?)?/g, (_, isProp, param, optional) => {
+                    o.props.push(isProp && param);
+                    o.isProp = o.isProp || !!isProp;
+                    const regex = isProp ? '[^\/]{0,}' : param;
+                    return optional ? `(\/${regex})?` : `\/${regex}`;
+                })
+        }$`);
+
+        parsed.push(o);
+
+        return parsed;
+    }, [])
+    .sort((a, b) => {
+        return (a.isProp ? a.props.length : 0) - (b.isProp ? b.props.length : 0);
+    });
+
 router.routes = {};
+router.parsed = {};
 
 router.update = payload => {
-    merge(router.routes, flatten(payload, '/'));
-    delete router.inactive;
+    parse(merge(router.routes, flatten(payload, '/')));
 };
 
 router.navigate = async (url, { req, res }) => {

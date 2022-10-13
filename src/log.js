@@ -4,10 +4,9 @@
     \x1b[0m -> reset
 */
 
-const DEFAULT_COLOR = 34;
-const PREFIX = '⟶  ';
-const BOX_PADDING = 3;
-const BORDER = [ '┌', '┐', '┘', '└', '─', '│', ' ', '├', '┤' ];
+const PREFIX = '_  ';
+const BOX_PADDING = 2;
+const BORDER = ['┌', '┐', '┘', '└', '─', '│', ' ', '├', '┤'];
 
 const map = {
     blackbg: 40,
@@ -26,43 +25,74 @@ const map = {
     magenta: 35,
     cyan: 36,
     white: 37,
+    reset: 0
 };
 
-const colorize = (color, content) => `\x1b[${color}m${content}\x1b[0m`;
+const colorize = (color, content) => color ? `\x1b[${color}m${content}\x1b[0m` : content;
 
-const setColor = n => n instanceof Number 
-    ? n 
-    : (typeof n === 'string' && map[n]) || DEFAULT_COLOR;
-
-const makeBox = (arg, args, color, boxColor = 35) => {
-    const [ TL, TR, BR, BL, H, V, S, ML, MR ] = BORDER.map(c => colorize(boxColor, c));
-
-    const content = [arg, ...args].filter(n => typeof n === 'string' && n);
-    const max = Math.max.apply(null, content.map(str => str.length));
-    const width = max + BOX_PADDING * 2;
-    const border = H.repeat(width);
-    const spacer = V + S.repeat(width) + V;
-    const divider = ML + H.repeat(width) + MR;
-    const tab = ' '.repeat(PREFIX.length);
-
-    const boxLine = c => /^\-+$/.test(c)
-        ? divider
-        : /^\s+$/.test(c)
-            ? spacer
-            : V + S.repeat(BOX_PADDING) + colorize(color, c) + S.repeat(max - c.length + BOX_PADDING) + V;
-
-    return [`${TL}${border}${TR}`, ...content.map(boxLine), `${BL}${border}${BR}\n`].map((str, i) => (!i ? '' : '\n') + tab + str);
+const extractColors = str => {
+    if (!/[<>]/.test(str)) return str;
+    return str
+        .split(/<\/(?![hb]r)\w+>/)
+        .map(str => {
+            return str.replace(/<(?![hb]r)(\w+)>(<(\w+)>)?([^<]+)/g, (_, color, __, bg, text) => {
+                const code = [color, bg].filter(Boolean).map((c, i) => map[c + (i ? 'bg' : '')]).join(';');
+                return colorize(code, text);
+            });
+        })
+        .join('');
 };
 
-export default active => function(arg, ...args) {
-    if (!active || /^\/favicon/.test(arg)) return;
+const getLength = str => {
+    return str.replace(/\x1B\[[0-9;]+m/g, '').length;
+};
+
+const makeBox = str => {
+    return str.replace(/<box\s?(\w+)?>((.|[\r\n])+?)<\/box>/g, (_, colorString, text = '') => {
+        const color = map[colorString];
+        const [TL, TR, BR, BL, H, V, S, ML, MR] = BORDER.map(c => colorize(color, c));
+
+        const content = extractColors(text)
+            .replace(/<hr>/g, '\n<hr>\n')
+            .split(/\n/) // support template sting newline
+            .map(str => str.trim()) // clean template string indent
+            .filter(Boolean)
+            .flatMap(str => str.replace(/(<br>)+/g, m => '\n'.repeat(m.length / 4)).split(/\n/))
+            .reduce((acc, str, i, arr) => {
+                return !str && !arr[i-1] ? acc : acc.concat(str);
+            }, []) // max one spacer
+
+        const lengths = content.map(str => getLength(str));
+        const max = Math.max.apply(null, lengths);
+        const width = max + BOX_PADDING * 2;
+        const border = H.repeat(width);
+        const spacer = V + S.repeat(width) + V;
+        const divider = ML + H.repeat(width) + MR;
+        const tab = ' '.repeat(PREFIX.length);
+
+        const boxLine = (c, i) => /^<br>$/.test(c) ?
+            spacer :
+            /^<hr>$/.test(c) ?
+            divider :
+            V + S.repeat(BOX_PADDING) + c + S.repeat(max - lengths[i] + BOX_PADDING) + V;
+
+        return [
+            `${TL}${border}${TR}`,  
+            ...content.map(boxLine),
+            `${BL}${border}${BR}`
+        ].map((str, i) => (!i ? '\n' : '') + tab + str).join('\n')
+    })
+};
+
+const parseColors = args => {
+    let str = [ ...args ].join(' ');
+    const hasBox = /<box/.test(str);
+    if (hasBox) str = makeBox(str);
+    return (hasBox ? '' : PREFIX) + extractColors(str);
+}
+
+export default active => function (...args) {
+    if (!active || /^\/favicon/.test(args[0])) return;
     if (this === null) return console.log('\x1Bc'); // clear console
-
-    const isObject = typeof this === 'object';
-    const isBox = isObject && this.type === 'box';
-    const color = setColor(isObject ? this.color : this);
-
-    const content = isBox ? makeBox(arg, args, color) : [ PREFIX, colorize(color, arg), ...args.filter(Boolean) ];
-
-    console.log(...content);
+    console.log(parseColors(args));
 };
