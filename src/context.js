@@ -24,7 +24,7 @@ const relative = ({ referer, host }, session, url) => {
 export default async (handler, settings, req, res) => {
     DEV && req.connection.ref();
     
-    log(req.url);
+    log('<cyan>request</cyan>', req.url);
 
     const { fallback, fileSizeLimit } = settings;
 
