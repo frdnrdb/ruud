@@ -2,6 +2,7 @@
     \x1b[30m -> foreground
     \x1b[30;40m -> foreground + background
     \x1b[0m -> reset
+    \x1Bc -> clear console
 */
 
 const PREFIX = '_  ';
@@ -77,10 +78,11 @@ const makeBox = str => {
             V + S.repeat(BOX_PADDING) + c + S.repeat(max - lengths[i] + BOX_PADDING) + V;
 
         return [
+            '\r',
             `${TL}${border}${TR}`,  
             ...content.map(boxLine),
             `${BL}${border}${BR}`
-        ].map((str, i) => (!i ? '\n' : '') + tab + str).join('\n')
+        ].map(str => tab + str).join('\n')
     })
 };
 
@@ -93,6 +95,6 @@ const parseColors = args => {
 
 export default active => function (...args) {
     if (!active || /^\/favicon/.test(args[1])) return;
-    if (this === null) return console.log('\x1Bc'); // clear console
+    if (this === null) return console.clear();
     console.log(parseColors(args));
 };

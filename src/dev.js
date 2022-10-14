@@ -24,8 +24,8 @@ export default (DEV, log, exit) => {
       <box yellow>
         ${CLIENT_NAME} @ ${CLIENT_VERSION}
         <hr>
-        ${parsedEnvVars.length ? ['<reset>process.env</reset>', ...parsedEnvVars.map(n => `<magenta>${n}</magenta>`), '<hr>'].join('\n') : []}
-        <cyan>${APP_NAME} @ ${APP_VERSION}</cyan> <reset>serving</reset> <cyan>http://${host}:${port}</cyan>
+        ${parsedEnvVars.length ? ['process.env', ...parsedEnvVars.map(n => `<magenta>${n}</magenta>`), '<hr>'].join('\n') : []}
+        <cyan>${APP_NAME} @ ${APP_VERSION}</cyan> 🎾 <cyan>http://${host}:${port}</cyan>
       </box>
     `);
   };

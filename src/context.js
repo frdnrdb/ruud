@@ -22,11 +22,6 @@ const relative = ({ referer, host }, session, url) => {
 };
 
 export default async (handler, settings, req, res) => {
-    if (/HEAD|OPTIONS/.test(req.method)) {
-        res.statusCode = 200;
-        return res.end(true);
-    }
-
     DEV && req.connection.ref();
     
     log('<cyan>request</cyan>', req.url);
@@ -70,6 +65,10 @@ export default async (handler, settings, req, res) => {
         session: state,    
         ...relative(req.headers, state, route.url),
     };
+
+    if (/HEAD|OPTIONS/.test(req.method)) {
+        return ctx.end(true, 200);
+    }
 
     const done = async before => {
         const func = router(ctx) || (ctx.relative && resolveStatic) || fallback;
