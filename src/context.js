@@ -22,6 +22,11 @@ const relative = ({ referer, host }, session, url) => {
 };
 
 export default async (handler, settings, req, res) => {
+    if (/HEAD|OPTIONS/.test(req.method)) {
+        res.statusCode = 200;
+        return res.end(true);
+    }
+
     DEV && req.connection.ref();
     
     log('<cyan>request</cyan>', req.url);

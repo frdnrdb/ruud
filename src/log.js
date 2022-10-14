@@ -92,7 +92,7 @@ const parseColors = args => {
 }
 
 export default active => function (...args) {
-    if (!active || /^\/favicon/.test(args[0])) return;
+    if (!active || /^\/favicon/.test(args[1])) return;
     if (this === null) return console.log('\x1Bc'); // clear console
     console.log(parseColors(args));
 };
