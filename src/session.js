@@ -40,7 +40,7 @@ const session = cookies => {
     const get = () => cookies.get(SESSION)
     const set = () => cookies.set(SESSION, get() || sessionHash(), { expires: SESSION_DURATION });
     
-    return set() || {
+    return { 
         static: {
             get: () => cookies.get(STATIC),
             set: value => cookies.set(STATIC, value, { path: value })

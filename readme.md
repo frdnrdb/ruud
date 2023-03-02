@@ -215,7 +215,7 @@ log('development only')
 ```
 
 #### tip
-> ruud internal _"nodemon"_ implementation was removed (v1.1.0) in favor of native node watcher 
+> ruud internal _"nodemon"_ implementation was removed (v1.1.0) in favour of native node watcher 
 ```json
 "scripts": {
     "dev": "node --watch index.js", // node > v18.11.0
