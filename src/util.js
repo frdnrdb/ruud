@@ -4,6 +4,7 @@ import httpsProtocol from 'https';
 import exitHandler from './exit.js';
 import logger from './log.js';
 import prepareDev from './dev.js';
+import env from './env.js';
 
 // --->
 
@@ -16,7 +17,7 @@ const log = logger(DEV);
 const exit = exitHandler(log);
 
 // dev dotenv parser + restart handler
-const startupMessage = prepareDev(DEV, log, exit);
+const startupMessage = prepareDev(DEV, log, env());
 
 // -->
 

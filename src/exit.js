@@ -10,8 +10,6 @@ export default log => {
     const exitQueue = [];
 
     const stop = async () => {
-        log('<magenta>gracefully shutting down</magenta>');
-
         while (exitQueue.length) {
             const [ name, func ] = exitQueue.shift();
             await func();
@@ -20,12 +18,19 @@ export default log => {
     };
 
     const handle = async (signal, message) => {        
-        if (signal === 'SIGINT') process.stdout.write('\b\b'); // remove ^C
+        if (/^SIG/.test(signal)) process.stdout.write('\b\b\n'); // remove ^C
 
         log(`<red>${signal}</red>`, message);
 
         if (/^(SIG)/.test(signal) || /EADDR/.test(message)) {
             await stop();
+
+            // assume --watch and make time for stdout consumption
+            if (signal === 'SIGTERM') {
+                process.stdout.write('\n');
+                await new Promise(r => setTimeout(r, 2000));
+            }
+
             process.exit(0);
         }
     };

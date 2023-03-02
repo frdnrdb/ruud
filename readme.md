@@ -6,24 +6,13 @@ the player who serves
 
 - **lightweight**: _no dependencies_
 - **opinionated**: _easy to use, fast_
-- **with**: _router, static files server, optional route cache_
-- **dev**: _dotenv parser, restart on file change_
+- **with**: _router, dotenv parser, static files server, optional route cache_
 - **see**: [context object](#ctx) _for more details_
 - **convenient** [utilities](#util): _folder-to-routes generator, fetch replacement, exit handler, dev logger_
 
 #### install
 ```sh
 npm i -S ruud
-```
-
-#### dev auto restart
-```json
-package.json
-
-"scripts": {
-    "dev": "ruud index.js",
-    "prod": "node index.js"
-}
 ```
 
 #### initiate 
@@ -223,4 +212,13 @@ const html = await fetch('https://google.com');
 
 import { log } from 'ruud';
 log('development only')
+```
+
+#### tip
+> ruud internal _"nodemon"_ implementation was removed (v1.1.0) in favor of native node watcher 
+```json
+"scripts": {
+    "dev": "node --watch index.js", // node > v18.11.0
+    "prod": "node index.js"
+}
 ```
