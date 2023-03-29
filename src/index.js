@@ -29,6 +29,10 @@ const preset = {
         '/err': () => errors.get()
     },
 
+    bodyParser: true,
+    bodyParserBuffer: false,
+    fileSizeLimit: false,
+
     fallback: ({ error }) => error('404')
 };
 

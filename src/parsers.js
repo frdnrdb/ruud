@@ -9,22 +9,18 @@ const url = url => {
     return { url, params, file, query };
 };
 
-const body = (req, payload = '') => new Promise((resolve, reject) => {
-    if (!/POST|PUT|PATCH|DELETE/.test(req.method)) {
-        return resolve();
-    }
-
-    if (req._uploadSizeLimit) {
-        const mb = Number(req.headers['content-length'])/1024/1024;
-        if (mb > req._uploadSizeLimit) return resolve({ 
-            error: `Max content size is ${req._uploadSizeLimit} MB (${mb.toFixed(1)})` 
-        });    
-    }
-      
+const buffer = (req, resolve, chunks = []) => {
     req
-      .on('data', chunk => payload += chunk)
-      .on('error', resolve)
-      .on('end', () => {
+        .on('error', resolve)
+        .on('data', chunk => chunks.push(chunk))
+        .on('end', () => resolve(Buffer.concat(chunks)));
+};
+
+const parser = (req, resolve, payload = '') => {
+    req
+        .on('error', resolve)
+        .on('data', chunk => payload += chunk)
+        .on('end', () => {
             const reqType = req.headers['content-type'];
 
             try {
@@ -43,7 +39,23 @@ const body = (req, payload = '') => new Promise((resolve, reject) => {
             catch(error) {
                 resolve(payload);
             }
-      });
+        });
+};
+const body = (req, settings) => new Promise(resolve => {
+    const { bodyParserBuffer, fileSizeLimit } = settings;
+
+    if (!/POST|PUT|PATCH|DELETE/.test(req.method)) {
+        return resolve();
+    }
+
+    if (fileSizeLimit) {
+        const mb = Number(req.headers['content-length'])/1024/1024;
+        if (mb > fileSizeLimit) return resolve({ 
+            error: `Max content size is ${fileSizeLimit} MB (${mb.toFixed(1)})` 
+        });    
+    }
+
+    bodyParserBuffer ? buffer(req, resolve) : parser(req, resolve);
 });
 
 const type = (payload = '') => /object|number|boolean/.test(typeof payload)

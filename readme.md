@@ -6,7 +6,7 @@ the player who serves
 
 - **lightweight**: _no dependencies_
 - **opinionated**: _easy to use, fast_
-- **with**: _router, dotenv parser, static files server, optional route cache_
+- **with**: _dotenv parser, router, body parser, static files server, optional route cache_
 - **see**: [context object](#ctx) _for more details_
 - **convenient** [utilities](#util): _folder-to-routes generator, fetch replacement, exit handler, dev logger_
 
@@ -51,9 +51,12 @@ app({
     fallback: undefined, // fallback for non existing routes
     before: undefined, // before each route
     after: undefined, // after each route
-    maxFileSize: undefined, // POST|PUT|PATCH max size
     
     routes: {}, 
+
+    bodyParser: true, // resolves ctx.body
+    bodyParserBuffer: false, // resolves ctx.body as buffer if bodyParser is active
+    fileSizeLimit: false, // POST|PUT|PATCH max size
 
     options: {} // https://nodejs.org/api/http.html#http_http_createserver_options_requestlistener
 })
@@ -131,6 +134,7 @@ method, // String
 headers, // Object
 
 body, // resolved POST|PUT|PATCH|DELETE payload
+bodyParser, // async function (manually resolve body)
 
 // ---> convenient return methods
 
@@ -152,6 +156,7 @@ cookies, // cookies.set(name, value, { expires, domain }?), cookies.get(name), c
 fetch, // fetch(url, options?), default GET => JSON, options: { method, headers, body }
 stream, // return stream(imageUrl)
 
+settings, // returns current setup
 log, // dev logger, log(...args)
 DEV, // process.env.NODE_ENV !== 'production'
 ```

@@ -26,13 +26,11 @@ export default async (handler, settings, req, res) => {
     
     log('<cyan>request</cyan>', req.url);
 
-    const { fallback, fileSizeLimit } = settings;
-
-    if (fileSizeLimit) req._uploadSizeLimit = fileSizeLimit;
-
     const route = url(req.url);
     const cookies = cookie(req, res);
     const state = session(cookies);
+
+    const bodyParser = () => body(req, settings);
 
     const ctx = {
         req,
@@ -40,7 +38,8 @@ export default async (handler, settings, req, res) => {
         ...route, // url, query, params, file
 
         method: req.method,
-        body: await body(req), 
+        body: settings.bodyParser && await bodyParser(), 
+        bodyParser,
         headers: req.headers,
         cookies,     
 
@@ -62,6 +61,7 @@ export default async (handler, settings, req, res) => {
         DEV,
 
         // internal
+        settings,
         session: state,    
         ...relative(req.headers, state, route.url),
     };
@@ -71,7 +71,7 @@ export default async (handler, settings, req, res) => {
     }
 
     const done = async before => {
-        const func = router(ctx) || (ctx.relative && resolveStatic) || fallback;
+        const func = router(ctx) || (ctx.relative && resolveStatic) || settings.fallback;
         const payload = cache.get(ctx) || cache.set(ctx, await func(ctx)) || before;
 
         // if route returns an error
