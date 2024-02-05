@@ -41,25 +41,25 @@ const parse = routes => router.parsed = Object.entries(routes)
 
         o.route = route;
 
-        let isAny, isGreedy;
+        let isAny;
 
         const match = route.replace(/\/(:)?([^/?]+)(\?)?/g, (_, isProp, param, optional) => {
             o.props.push(isProp && param);
             o.isProp = o.isProp || !!isProp;
             isAny = /^\*{1,}$/.test(param);
-            isGreedy = isGreedy || (isAny && param.length !== 1);
-            const regex = isProp || (isAny && !isGreedy) ? '[^\/]{0,}' : param;
+            o.isGreedy = o.isGreedy || (isAny && param.length !== 1);
+            const regex = isProp || (isAny && !o.isGreedy) ? '[^\/]{0,}' : param;
             return optional ? `(\/${regex})?` : `\/${regex}`;
         });
 
-        o.match = new RegExp(`^${isGreedy ? match.replace(/\/\*{2,}.*/, '.*') : match}$`);
+        o.match = new RegExp(`^${o.isGreedy ? match.replace(/\/\*{2,}.*/, '.*') : match}$`);
 
         parsed.push(o);
 
         return parsed;
     }, [])
     .sort((a, b) => {
-        return (a.isProp ? a.props.length : 0) - (b.isProp ? b.props.length : 0);
+        return (a.isGreedy ? 99 : a.isProp ? a.props.length : 0) - (b.isGreedy ? 99 : b.isProp ? b.props.length : 0);
     });
 
 router.routes = {};
