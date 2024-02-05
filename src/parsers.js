@@ -3,8 +3,8 @@ import mimeType from './types.js';
 const url = url => {
     if (!url) return;
     const [ path, search = '' ] = url.split('?');
-    const params = path.replace(/^https?:\/\//, '').split('/').filter(Boolean);
-    const file = /\w+\.\w+/.test(params[params.length - 1]) && params.pop().toLowerCase();
+    const params = path.replace(/^https?:\/\//, '').split('/').map(p => p.replace(/\.{2,}/g, '.')).filter(Boolean);
+    const file = /\w+\.\w+/.test(params[params.length - 1]) && params.pop(); //.toLowerCase();
     const query = queryString(search);    
     return { url, params, file, query };
 };

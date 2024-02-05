@@ -77,6 +77,10 @@ routes({})
     '/user/:name/:preference?': ({ props }) => {
         const { name, preference } = props;
     },
+    
+    '/any/*/param', // any/inbetween/param
+    '/any/param/**', // any/param/that/will/follow/after
+
     '/api/v1/cats': () => {},
     '/api': {
         'v2': {

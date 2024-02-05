@@ -22,7 +22,7 @@ export default log => {
 
         log(`<red>${signal}</red>`, message);
 
-        if (/^(SIG)/.test(signal) || /EADDR/.test(message)) {
+        if (/^(SIG)/.test(signal) || /EADDR/.test(message + signal)) {
             await stop();
 
             // assume --watch and make time for stdout consumption

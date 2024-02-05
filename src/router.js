@@ -41,15 +41,18 @@ const parse = routes => router.parsed = Object.entries(routes)
 
         o.route = route;
 
-        o.match = new RegExp(`^${
-            route
-                .replace(/\/(:)?([^/?]+)(\?)?/g, (_, isProp, param, optional) => {
-                    o.props.push(isProp && param);
-                    o.isProp = o.isProp || !!isProp;
-                    const regex = isProp ? '[^\/]{0,}' : param;
-                    return optional ? `(\/${regex})?` : `\/${regex}`;
-                })
-        }$`);
+        let isAny, isGreedy;
+
+        const match = route.replace(/\/(:)?([^/?]+)(\?)?/g, (_, isProp, param, optional) => {
+            o.props.push(isProp && param);
+            o.isProp = o.isProp || !!isProp;
+            isAny = /^\*{1,}$/.test(param);
+            isGreedy = isGreedy || (isAny && param.length !== 1);
+            const regex = isProp || (isAny && !isGreedy) ? '[^\/]{0,}' : param;
+            return optional ? `(\/${regex})?` : `\/${regex}`;
+        });
+
+        o.match = new RegExp(`^${isGreedy ? match.replace(/\/\*{2,}.*/, '.*') : match}$`);
 
         parsed.push(o);
 
