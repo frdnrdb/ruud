@@ -71,18 +71,20 @@ const makeBox = str => {
         const divider = ML + H.repeat(width) + MR;
         const tab = ' '.repeat(PREFIX.length);
 
-        const boxLine = (c, i) => /^<br>$/.test(c) ?
-            spacer :
-            /^<hr>$/.test(c) ?
-            divider :
-            V + S.repeat(BOX_PADDING) + c + S.repeat(max - lengths[i] + BOX_PADDING) + V;
+        const boxLine = (c, i) => /^<br>$/.test(c) 
+            ? spacer 
+            : /^<hr>$/.test(c) 
+                ? divider 
+                : V + S.repeat(BOX_PADDING) + c + S.repeat(max - lengths[i] + BOX_PADDING) + V;
 
-        return [
+        const parts = [
             '\r',
             `${TL}${border}${TR}`,  
             ...content.map(boxLine),
             `${BL}${border}${BR}`
-        ].map(str => tab + str).join('\n')
+        ];
+
+        return parts.map(str => tab + str).join('\n')
     })
 };
 

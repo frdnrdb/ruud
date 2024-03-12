@@ -25,6 +25,9 @@ const router = ctx => {
     }
 };
 
+const sortValue = o => o.isGreedy ? 99 : o.isProp ? o.props.length : 0;
+const sorter = (a, b) => sortValue(a) - sortValue(b);
+
 const parse = routes => router.parsed = Object.entries(routes)
     .reduce((parsed, [ route, func ]) => {
         const o = {
@@ -34,7 +37,11 @@ const parse = routes => router.parsed = Object.entries(routes)
             func
         };
 
-        route = route.replace(/^\/(GET|POST|PUT)/, (_, m) => {
+        if (typeof func !== 'function') {
+            o.func = () => func;
+        }
+
+        route = route.replace(/^\/(GET|POST|PUT|DELETE)/, (_, m) => {
             o.method = m;
             return '';
         });
@@ -42,14 +49,13 @@ const parse = routes => router.parsed = Object.entries(routes)
         o.route = route;
 
         let isAny;
-
         const match = route.replace(/\/(:)?([^/?]+)(\?)?/g, (_, isProp, param, optional) => {
             o.props.push(isProp && param);
             o.isProp = o.isProp || !!isProp;
             isAny = /^\*{1,}$/.test(param);
             o.isGreedy = o.isGreedy || (isAny && param.length !== 1);
-            const regex = isProp || (isAny && !o.isGreedy) ? '[^\/]{0,}' : param;
-            return optional ? `(\/${regex})?` : `\/${regex}`;
+            const regex = `\/${isProp || (isAny && !o.isGreedy) ? '[^\/]{0,}' : param}`;
+            return optional ? `(${regex})?` : regex;
         });
 
         o.match = new RegExp(`^${o.isGreedy ? match.replace(/\/\*{2,}.*/, '.*') : match}$`);
@@ -58,15 +64,17 @@ const parse = routes => router.parsed = Object.entries(routes)
 
         return parsed;
     }, [])
-    .sort((a, b) => {
-        return (a.isGreedy ? 99 : a.isProp ? a.props.length : 0) - (b.isGreedy ? 99 : b.isProp ? b.props.length : 0);
-    });
+    .sort(sorter);
 
 router.routes = {};
 router.parsed = {};
 
 router.update = payload => {
     parse(merge(router.routes, flatten(payload, '/')));
+};
+
+router.updateOne = (path, func) => {
+    router.update({ [path]: func });
 };
 
 router.navigate = async (url, { req, res }) => {

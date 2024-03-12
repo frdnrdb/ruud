@@ -53,7 +53,7 @@ const flatten = (obj, sep = '', pre = '', flat = {}, recursive, k = '') => {
             ? flatten(value, sep, k, flat, true) 
             : flat[k] = value;
 	}
-  return flat;
+    return flat;
 };
 
 export {

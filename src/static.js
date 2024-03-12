@@ -14,15 +14,14 @@ export default async (ctx, path) => {
         const parameters = path ? path.params : params;
         const fileName = (path && path.file) || file;
 
+        res.statusCode = 200;
+        res.setHeader('Content-Type', `${mimeType(fileName)}; charset=utf-8`);
+
         relative 
             ? parameters.unshift(...relative.split('/'))
             : relativeRoot(ctx, parameters);
 
         const location = join(process.cwd(), ...parameters, fileName || 'index.html');
-
-        res.statusCode = 200;
-
-        res.setHeader('Content-Type', `${mimeType(fileName)}; charset=utf-8`);
 
         return new Promise(resolve => {
             let data = '';
@@ -30,7 +29,7 @@ export default async (ctx, path) => {
                 .on('data', chunk => (res.write(chunk), data += chunk.toString()))
                 .on('end', () => res.end())
                 .on('close', () => resolve(data))
-                .on('error', () => resolve(error(`${!fileName ? 'index.html' : 'file'} not found`)))
+                .on('error', () => resolve(error(`${fileName ? 'file' : 'index.html'} not found`)))
         });        
     }
     catch(err) {

@@ -61,9 +61,11 @@ const srvr = settings => {
 // ---> init server
 
 const routes = router.update;
+const route = router.updateOne;
 
 const expose = {
     routes,
+    route,
     resolveFolder,
     exit,
     fetch,
@@ -81,9 +83,11 @@ const ruud = input => {
     const settings = merge({}, preset, config);
     const { port, host, routes } = settings;
 
-    if (!routes) preset.routes['/'] = () => 'serve the servants!';
-    router.update(routes);
+    if (!config.routes) {
+        preset.routes['/'] = () => 'serve the servants!';
+    }
 
+    router.update(routes);
     startupMessage(host, port);
 
     const instance = srvr(settings);
@@ -112,6 +116,7 @@ Object.assign(ruud, expose);
 
 export const server = input => ruud(input);
 export { routes as routes };
+export { route as route };
 export { resolveFolder as resolveFolder };
 export { exit as exit };
 export { fetch as fetch };

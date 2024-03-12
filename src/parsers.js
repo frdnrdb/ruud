@@ -36,7 +36,7 @@ const parser = (req, resolve, payload = '') => {
 
                 resolve(JSON.parse(payload));
             }
-            catch(error) {
+            catch(_) {
                 resolve(payload);
             }
         });

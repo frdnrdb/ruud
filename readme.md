@@ -25,11 +25,17 @@ app().routes({
     '/serve': async ctx => 'the servants',
 })
 
+// ---> with some options
+
+app({ port: 4000, ...options }).routes({
+    '/serve': async ctx => 'the servants',
+})
+
 // ---> when one route does it
 
 app(async ctx => 'serve the servants')
 
-// ---> input func is fallback
+// ---> input func as fallback
 
 app(func).routes({
     '/serve': async ctx => 'the servants',
@@ -41,7 +47,7 @@ app(func).routes({
     }
 })
 
-// ---> initiate with options
+// ---> initiate with options and routes
 
 app({
     port: 80, 
@@ -60,6 +66,18 @@ app({
 
     options: {} // https://nodejs.org/api/http.html#http_http_createserver_options_requestlistener
 })
+
+// ---> add more routes later
+
+import ruud from 'ruud'
+const app = ruud()
+
+app.routes({
+    mellon: () => 'collie',
+    infinite: () => 'sadness'
+})
+
+app.route('/we/have/no', () => 'bananas')
 
 // ---> alternatively
 

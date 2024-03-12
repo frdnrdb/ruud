@@ -1,6 +1,6 @@
 {
   "name": "ruud",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "the player who serves",
   "author": "frdnrdb <froden@gmail.com>",
   "license": "MIT",
@@ -21,5 +21,9 @@
   ],
   "engines": {
     "node": ">= 13.2.0"
+  },
+  "scripts": {
+    "test": "node --experimental-test-coverage test.js",
+    "example": "node --watch example.js"
   }
 }

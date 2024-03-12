@@ -34,7 +34,9 @@ const parseResponse = (res, body, buffer) => {
 };
 
 const fetch = (url = '', options = {}, streamHandler) => new Promise((resolve, reject) => {
-    if (!url) return reject({ error: 'url required' });
+    if (!url) {
+        return reject({ error: 'url required' });
+    }
 
     const { 
         method = 'GET',
@@ -46,10 +48,7 @@ const fetch = (url = '', options = {}, streamHandler) => new Promise((resolve, r
         buffer,
     } = options;
 
-    const headers = Object.assign(
-        { Accept: '*/*' },
-        inputHeaders
-    );
+    const headers = Object.assign({ Accept: '*/*' }, inputHeaders);
 
     const fetchHandler = res => {
         if (raw) {
@@ -70,10 +69,12 @@ const fetch = (url = '', options = {}, streamHandler) => new Promise((resolve, r
             return resolve(res);
         }
 
-        if (!statusOk(res.statusCode)) return silent ? resolve() : reject({
-            code: res.statusCode,
-            error: res.statusMessage
-        });
+        if (!statusOk(res.statusCode)) {
+            return silent ? resolve() : reject({
+                code: res.statusCode,
+                error: res.statusMessage
+            });
+        }
 
         streamHandler
             ? streamHandler(resolve, reject, res)
@@ -92,11 +93,13 @@ const fetch = (url = '', options = {}, streamHandler) => new Promise((resolve, r
     }
 
     req.setTimeout(options.timeout || DEFAULT_TIMEOUT, reject);
-    req.on('error', error => resolve({ error: error.message }));
+    req.on('error', ({ message }) => resolve({ error: message }));
 });
 
-const stream = (serverRes, url, buffer) => fetch(url, {}, (resolve, reject, res) => {
-    if (buffer) return resolve(res);
+const stream = (serverRes, url, options = {}) => fetch(url, options, (resolve, reject, res) => {
+    if (options.buffer) {
+        return resolve(res);
+    }
 
     try {
         serverRes.setHeader('Content-Type', res.headers['content-type']);
