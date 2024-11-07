@@ -7,55 +7,55 @@ import errors from './errors.js';
 import { fetch } from './fetch.js';
 
 const preset = {
-    /*
-        optional options for createServer 
-        https://nodejs.org/api/http.html#http_http_createserver_options_requestlistener
-        https://stackoverflow.com/a/5998795
-    */
-    options: {}, 
+  /*
+      optional options for createServer
+      https://nodejs.org/api/http.html#http_http_createserver_options_requestlistener
+      https://stackoverflow.com/a/5998795
+  */
+  options: {},
 
-    /*
-        aws/ heroku elastic load balancer uses http
-    */
-    protocol: 'http', 
-    port: process.env.PORT || 80,
-    host: process.env.HOST || '0.0.0.0',
+  /*
+      aws/ heroku elastic load balancer uses http
+  */
+  protocol: 'http',
+  port: process.env.PORT || 80,
+  host: process.env.HOST || '0.0.0.0',
 
-    /*
-        default routes unless specified otherwise
-    */
-    routes: {
-        '/favicon.ico': ({ status }) => status(204),
-        '/err': () => errors.get()
-    },
+  /*
+      default routes unless specified otherwise
+  */
+  routes: {
+    '/favicon.ico': ({ status }) => status(204),
+    '/err': () => errors.get()
+  },
 
-    bodyParser: true,
-    bodyParserBuffer: false,
-    fileSizeLimit: false,
+  bodyParser: true,
+  bodyParserBuffer: false,
+  fileSizeLimit: false,
 
-    fallback: ({ error }) => error('404')
+  fallback: ({ error }) => error('404')
 };
 
 // ---> route handler
 
 const handler = async (ctx, done, { before, after }) => {
-    try {
-        await done(before && await before(ctx));
-        after && await after(ctx);
-    }
-    catch(err) {
-        ctx.end(errors.add(err, ctx), 500);
-        after && after(errors.get(0))
-    }
+  try {
+    await done(before && await before(ctx));
+    after && await after(ctx);
+  }
+  catch (err) {
+    ctx.end(errors.add(err, ctx), 500);
+    after && after(errors.get(0))
+  }
 };
 
 // ---> create server
 
 const srvr = settings => {
-    const { port, host, protocol, options } = settings;
-    return protocols[protocol]
-        .createServer(options, context.bind(null, handler, settings))
-        .listen(port, host);    
+  const { port, host, protocol, options } = settings;
+  return protocols[protocol]
+    .createServer(options, context.bind(null, handler, settings))
+    .listen(port, host);
 };
 
 // ---> init server
@@ -64,52 +64,53 @@ const routes = router.update;
 const route = router.updateOne;
 
 const expose = {
-    routes,
-    route,
-    resolveFolder,
-    exit,
-    fetch,
-    log
+  routes,
+  route,
+  use: route,
+  resolveFolder,
+  exit,
+  fetch,
+  log
 };
 
 const ruud = input => {
 
-    const config = typeof input === 'object' 
-        ? input 
-        : typeof input === 'function'
-            ? { fallback: input }
-            : {};
+  const config = typeof input === 'object'
+    ? input
+    : typeof input === 'function'
+      ? { fallback: input }
+      : {};
 
-    const settings = merge({}, preset, config);
-    const { port, host, routes } = settings;
+  const settings = merge({}, preset, config);
+  const { port, host, routes } = settings;
 
-    if (!config.routes) {
-        preset.routes['/'] = () => 'serve the servants!';
+  if (!config.routes) {
+    preset.routes['/'] = () => 'serve the servants!';
+  }
+
+  router.update(routes);
+  startupMessage(host, port);
+
+  const instance = srvr(settings);
+  const sockets = new Set();
+
+  instance.on('connection', socket => sockets.add(socket));
+
+  /*
+      graceful shut-down
+  */
+  exit.add('server', async function() {
+    for (const socket of sockets) {
+      socket.destroy();
+      sockets.delete(socket);
+      socket.unref();
     }
+    return new Promise(r => instance.close(r));
+  });
 
-    router.update(routes);
-    startupMessage(host, port);
+  Object.assign(expose, { instance });
 
-    const instance = srvr(settings);
-    const sockets = new Set();
-
-    instance.on('connection', socket => sockets.add(socket));
-
-    /*
-        graceful shut-down
-    */
-    exit.add('server', async function() {
-        for (const socket of sockets) {
-            socket.destroy();
-            sockets.delete(socket);
-            socket.unref();
-        }
-        return new Promise(r => instance.close(r));
-    });
-    
-    Object.assign(expose, { instance });
-    
-    return expose;
+  return expose;
 };
 
 Object.assign(ruud, expose);

@@ -2,7 +2,7 @@ const log = [];
 
 export default {
   add(err, { url }) {
-    console.error(err);   
+    console.error(err);
     const { name, message, cause, stack, code } = err;
     log.push({
       url,

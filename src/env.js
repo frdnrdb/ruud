@@ -5,12 +5,12 @@ export default function() {
   const env = existsSync(envFile) && readFileSync(envFile, 'utf-8');
 
   const log = [];
-  
+
   env && env.replace(/^([^#=\n]+)=([^#\n\r]+)(?:#.+)?$/gm, (_, key, val) => {
-      if (val.trim()) {
-          process.env[key] = val;
-          log.push(key);
-      }
+    if (val.trim()) {
+      process.env[key] = val;
+      log.push(key);
+    }
   });
 
   return log;

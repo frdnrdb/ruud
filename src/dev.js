@@ -3,11 +3,11 @@ import { fileURLToPath } from 'url';
 import { readFileSync } from 'fs';
 
 export default (DEV, log, envVars) => {
-  if (!DEV) return () => {};
+  if (!DEV) return () => { };
 
   const __dirname = dirname(fileURLToPath(import.meta.url));
   const { name, version } = (DEV && JSON.parse(readFileSync(`${__dirname}/../package.json`))) || {};
-  
+
   const APP_NAME = name;
   const APP_VERSION = version;
   const CLIENT_NAME = process.env.npm_package_name;

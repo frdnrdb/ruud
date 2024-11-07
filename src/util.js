@@ -8,12 +8,12 @@ import env from './env.js';
 
 // --->
 
-const DEV =  process.env.NODE_ENV !== 'production';
+const DEV = process.env.NODE_ENV !== 'production';
 
-// dev logger 
+// dev logger
 const log = logger(DEV);
 
-// exit handler 
+// exit handler
 const exit = exitHandler(log);
 
 // dev dotenv parser + restart handler
@@ -22,23 +22,23 @@ const startupMessage = prepareDev(DEV, log, env());
 // -->
 
 const protocols = {
-    http: httpProtocol,
-    https: httpsProtocol
+  http: httpProtocol,
+  https: httpsProtocol
 };
 
 // -->
 
 const merge = (obj, ...objects) => {
-    for (const o of objects) {
-        for (const [ key, val ] of Object.entries(o)) {
-            if (typeof obj[key] === 'object') {
-                merge(obj[key], val);
-                continue;
-            }
-            obj[key] = val;
-        }
+  for (const o of objects) {
+    for (const [key, val] of Object.entries(o)) {
+      if (typeof obj[key] === 'object') {
+        merge(obj[key], val);
+        continue;
+      }
+      obj[key] = val;
     }
-    return obj;
+  }
+  return obj;
 }
 
 /*
@@ -46,24 +46,24 @@ const merge = (obj, ...objects) => {
     flatten(o, '/') => '/prefixed/and/separated
 */
 const flatten = (obj, sep = '', pre = '', flat = {}, recursive, k = '') => {
-	for (const [ key, value ] of Object.entries(obj)) {
-        if (recursive && !sep) sep = '.';
-        k = pre + (key.startsWith(sep) ? '' : sep) + key;
-        typeof value === 'object' 
-            ? flatten(value, sep, k, flat, true) 
-            : flat[k] = value;
-	}
-    return flat;
+  for (const [key, value] of Object.entries(obj)) {
+    if (recursive && !sep) sep = '.';
+    k = pre + (key.startsWith(sep) ? '' : sep) + key;
+    typeof value === 'object'
+      ? flatten(value, sep, k, flat, true)
+      : flat[k] = value;
+  }
+  return flat;
 };
 
 export {
-    DEV,
-    protocols,
+  DEV,
+  protocols,
 
-    exit,
-    log,
-    startupMessage,
+  exit,
+  log,
+  startupMessage,
 
-    merge,
-    flatten
+  merge,
+  flatten
 };
