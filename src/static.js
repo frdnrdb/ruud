@@ -5,7 +5,7 @@ import { mimeType } from './parsers.js';
 const assetRegex = /^(script|style|image|font|object|media|manifest|worker|sharedworker|serviceworker|audioworklet|paintworklet|report|xslt|embed|iframe|track|video|audio)$/;
 
 export const setRelative = (headers, session, url) => {
-  const header = headers['sec-fetch-dest'];
+  const header = headers['sec-fetch-dest'] || '';
   const isRoot = header === 'document' && headers['sec-fetch-mode'] === 'navigate';
   const internal = !isRoot && header.match(assetRegex); // NOT secFetchDest 'empty'
   const relative = internal && session.static.get();    
