@@ -2,37 +2,55 @@ import { createReadStream } from 'fs';
 import { join } from 'path';
 import { mimeType } from './parsers.js';
 
-const relativeRoot = (ctx, parameters) => {
-  const path = parameters.join('/');
-  ctx.session.static.set(path),
-    ctx.relativeRoot = path;
+const assetRegex = /^(script|style|image|font|object|media|manifest|worker|sharedworker|serviceworker|audioworklet|paintworklet|report|xslt|embed|iframe|track|video|audio)$/;
+
+export const setRelative = (headers, session, url) => {
+  const header = headers['sec-fetch-dest'];
+  const isRoot = header === 'document' && headers['sec-fetch-mode'] === 'navigate';
+  const internal = !isRoot && header.match(assetRegex); // NOT secFetchDest 'empty'
+  const relative = internal && session.static.get();    
+  return { 
+    relative,
+    relativeUrl: relative && `/${relative}${url}`,
+    isRoot
+  };     
 };
 
-export default async (ctx, path) => {
-  const { res, relative, params, file, error } = ctx;
-  try {
-    const parameters = path ? path.params : params;
-    const fileName = (path && path.file) || file;
+const setRoot = (ctx, params) => {
+  const path = params.filter(p => /^\w/.test(p)).join('/'); // remove leading slashes or dots
+  ctx.session.static.set(path);
+  Object.assign(ctx, {
+    relativeRoot: path,
+    relative: '',
+    relativeUrl: ''
+  });
+};
 
-    res.statusCode = 200;
-    res.setHeader('Content-Type', `${mimeType(fileName)}; charset=utf-8`);
+export const resolveStatic = async (ctx, path) => {
+    try {
+        const params = path ? path.params : ctx.params;
+        ctx.isRoot && setRoot(ctx, params);
 
-    relative
-      ? parameters.unshift(...relative.split('/'))
-      : relativeRoot(ctx, parameters);
+        const { res, relative, file, error } = ctx;
+        const fileName = (path && path.file) || file;
 
-    const location = join(process.cwd(), ...parameters, fileName || 'index.html');
+        res.statusCode = 200;
+        res.setHeader('Content-Type', `${mimeType(fileName)}; charset=utf-8`);
 
-    return new Promise(resolve => {
-      let data = '';
-      createReadStream(location)
-        .on('data', chunk => (res.write(chunk), data += chunk.toString()))
-        .on('end', () => res.end())
-        .on('close', () => resolve(data))
-        .on('error', () => resolve(error(`${location} not found`)))
-    });
-  }
-  catch (err) {
-    error(err.message);
-  }
+        relative && params.unshift(...relative.split('/'));
+
+        const location = join(process.cwd(), ...params, fileName || 'index.html');
+
+        return new Promise(resolve => {
+            let data = '';
+            createReadStream(location) 
+                .on('data', chunk => (res.write(chunk), data += chunk.toString()))
+                .on('end', () => res.end())
+                .on('close', () => resolve(data))
+                .on('error', () => resolve(error(`${location} not found`)))
+        });        
+    }
+    catch(err) {
+        ctx.error(err.message);
+    }
 };

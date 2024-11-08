@@ -8,16 +8,7 @@ import { fetch, stream } from './fetch.js';
 import router from './router.js';
 import cache from './cache.js';
 
-import resolveStatic from './static.js';
-
-const relative = ({ referer, host }, session, url) => {
-  if (!referer || !referer.includes(host)) return;
-  const relative = session.static.get();
-  return relative && {
-    relative,
-    relativeUrl: `/${relative}${url}`
-  };
-};
+import { setRelative, resolveStatic } from './static.js';
 
 export default async (handler, settings, req, res) => {
   DEV && req.connection.ref();
@@ -69,7 +60,7 @@ export default async (handler, settings, req, res) => {
     // internal
     settings,
     session: state,
-    ...relative(req.headers, state, route.url),
+    ...setRelative(req.headers, state, route.url)
   };
 
   const done = async before => {
