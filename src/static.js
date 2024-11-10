@@ -2,13 +2,17 @@ import { createReadStream } from 'fs';
 import { join } from 'path';
 import { mimeType } from './parsers.js';
 
-const assetRegex = /^(script|style|image|font|object|media|manifest|worker|sharedworker|serviceworker|audioworklet|paintworklet|report|xslt|embed|iframe|track|video|audio)$/;
+const assetFileRegex = /\.(js|mjs|css|png|jpg|jpeg|gif|svg|webp|ico|bmp|tiff|woff|woff2|ttf|otf|eot|mp4|webm|ogv|mp3|wav|ogg|flac|aac|opus|pdf|json|xml|csv|txt)$/;
+const assetHeaderRegex = /^(script|style|image|font|object|media|manifest|worker|sharedworker|serviceworker|audioworklet|paintworklet|report|xslt|embed|iframe|track|video|audio)$/;
 
 export const setRelative = (headers, session, url) => {
-  const header = headers['sec-fetch-dest'] || '';
-  const isRoot = header === 'document' && headers['sec-fetch-mode'] === 'navigate';
-  const internal = !isRoot && header.match(assetRegex); // NOT secFetchDest 'empty'
-  const relative = internal && session.static.get();    
+  const header = headers['sec-fetch-dest'];
+  const isRoot = header
+    ? header === 'document' && headers['sec-fetch-mode'] === 'navigate'
+    : /\.html$/.test(url);
+
+  const isAsset = !isRoot && (header ? header.match(assetHeaderRegex) : url.match(assetFileRegex)); // NOT secFetchDest 'empty'
+  const relative = isAsset && session.static.get();    
   return { 
     relative,
     relativeUrl: relative && `/${relative}${url}`,

@@ -5,7 +5,7 @@ the player who serves
 ---
 
 - **lightweight**: _no dependencies_
-- **opinionated**: _easy to use, fast_
+- **intuitive/ opinionated**: _easy to use, fast_
 - **with**: _dotenv parser, router, body parser, static files server, optional route cache_
 - **see**: [context object](#ctx) _for more details_
 - **convenient** [utilities](#util): _folder-to-routes generator, fetch replacement, exit handler, dev logger_
