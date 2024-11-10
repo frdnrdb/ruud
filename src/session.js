@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { DEV } from './util.js';
 
 const STATIC = 'x-static';
 const SESSION = 'x-session';
@@ -7,7 +8,7 @@ export const SESSION_DURATION = 5; // minutes
 const parse = (cookie = '') => Object.fromEntries(cookie.split('; ').map(p => p.split('=')));
 
 const stringify = (props = {}) => {
-  return Object.entries(Object.assign({ path: '/' }, props)).map(([key, val]) => {
+  return Object.entries(Object.assign({ path: '/', expires: SESSION_DURATION }, props)).map(([key, val]) => {
     if (key === 'expires') {
       val = new Date(+new Date + val * 1000 * 60).toGMTString();
     }
@@ -21,7 +22,7 @@ const get = (req, name = '') => {
 };
 
 const set = (res, name = '', value = '', props) => {
-  res.setHeader('Set-Cookie', `${name}=${value};${stringify(props)}`);
+  res.setHeader('Set-Cookie', `${name}=${value};${stringify(props)};SameSite=${DEV ? 'Lax' : 'None;Secure'}`);
 };
 
 const del = (res, name = '', props = {}) => {
@@ -43,7 +44,7 @@ const session = cookies => {
   return {
     static: {
       get: () => cookies.get(STATIC),
-      set: value => cookies.set(STATIC, value, { path: value })
+      set: value => cookies.set(STATIC, value)
     },
     get,
     set
