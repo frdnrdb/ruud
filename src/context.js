@@ -45,7 +45,7 @@ export default async (handler, settings, req, res) => {
     error: error.bind(null, req, res),
     end: end.bind(null, req, res),
 
-    serve: path => resolveStatic(ctx, url(path)),
+    serve: (path, props) => resolveStatic(ctx, url(path), props),
     cache: (ttl, path) => cache(ctx, ttl, path),
 
     fetch,

@@ -137,6 +137,10 @@ routes({})
 '/public': ({ serve }) => serve() // serves index.html in public folder
 '/cats': ({ serve }) => serve('/dist/section/cats') // index.html
 '/cat.jpg': ({ serve, file }) => serve(`/dist/assets/img/${file}`)
+
+// rudimentary html template support, eg. <h1>hello {{ name }}</h1>
+'/hello': ({ serve }) => serve('/public/hello.html', { name: 'you' })
+
 ```
 
 ### <a name="ctx">the context object</a>
@@ -173,7 +177,7 @@ navigate, // navigate('/some/other/route');
 routes, // update/ manipulate: routes({})
 
 cache, // cache(ttl, path?[optional, default current])
-cookies, // cookies.set(name, value, { expires, domain }?), cookies.get(name), cookies.del(name)     
+cookies, // cookies.set(name, value, { expires[seconds, default 300], path[default '/'], SameSite[default 'none'], Secure[default true], domain, HttpOnly, ... }?), cookies.get(name), cookies.del(name)     
 
 fetch, // fetch(url, options?), default GET => JSON, options: { method, headers, body }
 stream, // return stream(imageUrl)

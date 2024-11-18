@@ -30,7 +30,16 @@ const setRoot = (ctx, params) => {
   });
 };
 
-export const resolveStatic = async (ctx, path) => {
+const applyTemplate = (data, props) => {
+  if (typeof props !== 'object' || Array.isArray(props)) {
+    return data;
+  }
+  return Object.entries(props).reduce((html, [key, value]) => {
+    return html.replace(new RegExp(`\\{\\{\\s{0,}${key}\\s{0,}\\}\\}`, 'gm'), value);
+  }, data);
+};
+
+export const resolveStatic = async (ctx, path, props) => {
     try {
         const params = path ? path.params : ctx.params;
         ctx.isRoot && setRoot(ctx, params);
@@ -44,12 +53,18 @@ export const resolveStatic = async (ctx, path) => {
         relative && params.unshift(...relative.split('/'));
 
         const location = join(process.cwd(), ...params, fileName || 'index.html');
+        const useTemplate = location.endsWith('.html') && props;
 
         return new Promise(resolve => {
             let data = '';
             createReadStream(location) 
-                .on('data', chunk => (res.write(chunk), data += chunk.toString()))
-                .on('end', () => res.end())
+                .on('data', chunk => {
+                  !useTemplate && res.write(chunk);
+                  data += chunk.toString()
+                })
+                .on('end', () => {
+                  useTemplate ? res.end(applyTemplate(data, props)) : res.end()
+                })
                 .on('close', () => resolve(data))
                 .on('error', () => resolve(error(`${location} not found`)))
         });        
