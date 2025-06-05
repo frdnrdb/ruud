@@ -37,8 +37,13 @@ const redirect = (res, Location, status = 301) => {
   res.end();
 }
 
-const error = (req, res, object, status = 404) => {
+const error = (req, res, object, status = 400) => {
   log('<red>error</red>', status, object, req.url);
+  if (object.throw) {
+    const err = new Error(object.error);
+    err.code = status;
+    throw err;
+  }
   end(req, res, object.error || object.message || object, object.code || status);
 }
 

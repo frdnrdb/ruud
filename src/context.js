@@ -42,6 +42,7 @@ export default async (handler, settings, req, res) => {
 
     redirect: redirect.bind(null, res),
     status: (code, payload) => end(req, res, payload, code),
+    throw: (message) => error(req, res, { error: message, throw: true }),
     error: error.bind(null, req, res),
     end: end.bind(null, req, res),
 

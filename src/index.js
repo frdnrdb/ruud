@@ -44,7 +44,7 @@ const handler = async (ctx, done, { before, after }) => {
     after && await after(ctx);
   }
   catch (err) {
-    ctx.end(errors.add(err, ctx), 500);
+    ctx.end(errors.add(err, ctx), err.code || 500);
     after && after(errors.get(0))
   }
 };
