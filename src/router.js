@@ -46,10 +46,10 @@ const parse = routes => router.parsed = Object.entries(routes)
       return '';
     });
 
-    o.route = route;
+    o.route = route.replace(/\/$/, '') || '/'; // remove trailing slash
 
     let isAny;
-    const match = route.replace(/\/(:)?([^/?]+)(\?)?/g, (_, isProp, param, optional) => {
+    const match = o.route.replace(/\/(:)?([^/?]+)(\?)?/g, (_, isProp, param, optional) => {
       o.props.push(isProp && param);
       o.isProp = o.isProp || !!isProp;
       isAny = /^\*{1,}$/.test(param);

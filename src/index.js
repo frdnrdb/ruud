@@ -33,7 +33,10 @@ const preset = {
   bodyParserBuffer: false,
   fileSizeLimit: false,
 
-  fallback: ({ error }) => error('404')
+  fallback: ({ status }) => {
+    const func = router.routes['/404'];
+    status(404, func ? func() : '404');
+  }
 };
 
 // ---> route handler

@@ -1,14 +1,13 @@
+import { DEV, vars } from './env.js';
+
 import httpProtocol from 'http';
 import httpsProtocol from 'https';
 
 import exitHandler from './exit.js';
 import logger from './log.js';
 import prepareDev from './dev.js';
-import env from './env.js';
 
 // --->
-
-const DEV = process.env.NODE_ENV !== 'production';
 
 // dev logger
 const log = logger(DEV);
@@ -17,7 +16,7 @@ const log = logger(DEV);
 const exit = exitHandler(log);
 
 // dev dotenv parser + restart handler
-const startupMessage = prepareDev(DEV, log, env());
+const startupMessage = prepareDev(DEV, log, vars);
 
 // -->
 
