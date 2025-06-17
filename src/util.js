@@ -18,14 +18,30 @@ const exit = exitHandler(log);
 // dev dotenv parser + restart handler
 const startupMessage = prepareDev(DEV, log, vars);
 
-// -->
+// --->
 
 const protocols = {
   http: httpProtocol,
   https: httpsProtocol
 };
 
-// -->
+// --->
+
+const tryJson = data => {
+  try {
+    return JSON.parse(data);
+  } catch {
+    return data; 
+  }
+};
+
+// --->
+
+const normalize = (path = '') => (path.startsWith('/') ? path : '/' + path)
+  .replace(/\/{2,}/g, '/') // multiple slashes
+  .replace(/(?<=.)\/+$/, ''); // trailing slash
+
+// --->
 
 const merge = (obj, ...objects) => {
   for (const o of objects) {
@@ -63,6 +79,9 @@ export {
   log,
   startupMessage,
 
+  tryJson,
+
+  normalize,
   merge,
   flatten
 };

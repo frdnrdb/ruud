@@ -1,80 +1,125 @@
 import context from './context.js';
-import { merge, flatten } from './util.js';
+import { normalize, flatten } from './util.js';
+
+const setProps = (ctx, route, params) => {
+  if (!route) {
+    return;
+  }
+
+  if (params) {
+      ctx.props = Object.fromEntries(
+        params
+          .map((param, i) => route.props[i] && [route.props[i], param])
+          .filter(Boolean)
+      );
+  }
+
+  return route.func;
+};
 
 const router = ctx => {
-  const { routes } = router;
   const { url, params } = ctx;
   const path = params.length ? '/' + params.join('/') : url.split('?')[0];
 
-  if (path in routes) {
-    return routes[path];
+  let selected;
+  
+  for (const r of router.handlers) {
+    if (r.method !== ctx.method) continue;
+    if (!r.match.test(path)) continue;
+    selected = r;
+    break;
   }
 
-  for (const { method, match, props, func } of router.parsed) {
+  const routeHandler = setProps(ctx, selected, params);
 
-    if (method && method !== ctx.method) continue;
-    if (!match.test(path)) continue;
+  const middleware = router.middleware.filter(m => !m.route || m.match.test(path));
+  const middlewareHandler = middleware.length && (async () => {
+    let idx = 0;
+    let result;
+    const next = async () => {
+      if (idx < middleware.length) {
+        const m = middleware[idx++];
+        const handler = setProps(ctx, m, m.match && params);
+        return await handler(ctx, next);
+      } 
+      if (selected) {
+        result = await routeHandler(ctx);
+      }
+    };    
+    await next();
+    return result;
+  });
 
-    ctx.props = Object.fromEntries(
-      params
-        .map((param, i) => props[i] && [props[i], param])
-        .filter(Boolean)
-    );
-
-    return ctx.route = func;
-  }
+  return middlewareHandler || routeHandler;
 };
 
-const sortValue = o => o.isGreedy ? 99 : o.isProp ? o.props.length : 0;
+const sortValue = o => !isNaN(o.idx)
+  ? 99 - o.idx
+  : o.isGreedy
+    ? 99
+    : o.isProp 
+      ? o.props.length 
+      : 0;
+
 const sorter = (a, b) => sortValue(a) - sortValue(b);
+const parseRoute = (route, func) => {
+  const o = {
+    match: '',
+    props: [],
+    method: 'GET',
+    func
+  };
 
-const parse = routes => router.parsed = Object.entries(routes)
-  .reduce((parsed, [route, func]) => {
-    const o = {
-      match: '',
-      props: [],
-      method: 0,
-      func
-    };
+  if (typeof func !== 'function') {
+    o.func = () => func;
+  }
+  
+  const methodRegex = /(GET|POST|PUT|DELETE|(MIDDLEWARE)(\[\d+\]))\/?/;
+  route = route.replace(methodRegex, (_, method, middleware, id) => {
+    middleware 
+      ? (o.middleware = true, o.idx = Number(id.slice(1, -1)))
+      : o.method = method;
+    return '';
+  });
 
-    if (typeof func !== 'function') {
-      o.func = () => func;
-    }
+  o.route = normalize(route);
 
-    route = route.replace(/^\/(GET|POST|PUT|DELETE)/, (_, m) => {
-      o.method = m;
-      return '';
-    });
+  let isAny;
+  const match = o.route.replace(/\/(:)?([^/?]+)(\?)?/g, (_, isProp, param, optional) => {
+    o.props.push(isProp && param);
+    o.isProp = o.isProp || !!isProp;
+    isAny = /^\*{1,}$/.test(param);
+    o.isGreedy = o.isGreedy || (isAny && param.length !== 1);
+    const regex = `\/${isProp || (isAny && !o.isGreedy) ? '[^\/]{0,}' : param}`;
+    return optional ? `(${regex})?` : regex;
+  });
 
-    o.route = route.replace(/\/$/, '') || '/'; // remove trailing slash
+  o.match = new RegExp(`^${o.isGreedy ? match.replace(/\/\*{2,}.*/, '.*') : match}$`);
 
-    let isAny;
-    const match = o.route.replace(/\/(:)?([^/?]+)(\?)?/g, (_, isProp, param, optional) => {
-      o.props.push(isProp && param);
-      o.isProp = o.isProp || !!isProp;
-      isAny = /^\*{1,}$/.test(param);
-      o.isGreedy = o.isGreedy || (isAny && param.length !== 1);
-      const regex = `\/${isProp || (isAny && !o.isGreedy) ? '[^\/]{0,}' : param}`;
-      return optional ? `(${regex})?` : regex;
-    });
-
-    o.match = new RegExp(`^${o.isGreedy ? match.replace(/\/\*{2,}.*/, '.*') : match}$`);
-
-    parsed.push(o);
-
-    return parsed;
-  }, [])
-  .sort(sorter);
+  return o;
+}
 
 router.routes = {};
-router.parsed = {};
+router.handlers = [];
+router.middleware = [];
+
+const handleUpdate = (path, func) => {
+  router.routes[path] = func;
+  const o = parseRoute(path, func);
+  const ref = router[o.middleware ? 'middleware' : 'handlers'];
+  const idx = ref.findIndex(r => r.route === o.route && r.method === o.method); 
+  idx === -1 ? ref.push(o) : ref[idx] = o;
+  ref.sort(sorter); 
+}
 
 router.update = payload => {
-  parse(merge(router.routes, flatten(payload, '/')));
+  for (const [path, func] of Object.entries(flatten(payload, '/'))) {
+    router.updateOne(path, func);
+  }
 };
 
 router.updateOne = (path, func) => {
-  router.update({ [path]: func });
+  handleUpdate(normalize(path), func);
 };
 
 router.navigate = async (url, { req, res }) => {

@@ -57,9 +57,25 @@ const body = (req, settings) => new Promise(resolve => {
   bodyParserBuffer ? buffer(req, resolve) : parser(req, resolve);
 });
 
-const type = (payload = '') => /object|number|boolean/.test(typeof payload)
-  ? ['application/json', JSON.stringify(payload)]
-  : [`text/${/<[^>]+>[^<]+<\//.test(payload) ? 'html' : 'plain'}`, payload];
+const type = (payload = '') => {
+  if (!payload) {
+    return ['text/plain', ''];
+  }
+  
+  if (typeof payload !== 'string') {
+    payload = JSON.stringify(payload);
+  }  
+
+  if (/export/.test(payload)) {
+    return ['application/javascript', payload];
+  }
+  
+  if (payload.indexOf('<') !== -1 && /<[^>]+>[^<]+<\//.test(payload)) {
+    return ['text/html', payload];
+  }
+  
+  return ['text/plain', payload];
+};
 
 const queryValueTypes = (str = '') => isNaN(str)
   ? /^(true)|(false)$/.test(str)

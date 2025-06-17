@@ -97,7 +97,9 @@ const parseColors = args => {
 
 export default active => function(...args) {
   if (!active || /^\/favicon/.test(args[1])) return;
-  if (this === null) return console.clear();
+  if (this === null) {
+    return console.clear();
+  }
   const out = parseColors(args);
   return process.env.npm_lifecycle_event === 'test' ? out : console.log(out);
 };

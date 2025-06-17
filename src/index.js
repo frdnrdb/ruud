@@ -1,10 +1,10 @@
-import { protocols, merge, exit, startupMessage, log } from './util.js';
+import { protocols, normalize, merge, exit, startupMessage, log } from './util.js';
 
 import context from './context.js';
 import router from './router.js';
 import resolveFolder from './folder.js';
 import errors from './errors.js';
-import { fetch } from './fetch.js';
+import socketHandler from './socket.js';
 
 const preset = {
   /*
@@ -21,11 +21,12 @@ const preset = {
   port: process.env.PORT || 80,
   host: process.env.HOST || '0.0.0.0',
 
+  socket: false,
+
   /*
       default routes unless specified otherwise
   */
   routes: {
-    '/favicon.ico': ({ status }) => status(204),
     '/err': () => errors.get()
   },
 
@@ -33,22 +34,35 @@ const preset = {
   bodyParserBuffer: false,
   fileSizeLimit: false,
 
-  fallback: ({ status }) => {
-    const func = router.routes['/404'];
-    status(404, func ? func() : '404');
-  }
+  middleware: [],
+
+  fallback: ({ status }) => status(404, '404')
 };
 
 // ---> route handler
 
-const handler = async (ctx, done, { before, after }) => {
+const handler = async (ctx, done, { before, after, socket }) => {
+  if (ctx.url === '/favicon.ico') {
+    ctx.res.setHeader('Cache-Control', 'max-age=86400, public');
+    ctx.res.statusCode = 204;
+    return;
+  }
+
+  if (socket && socketHandler.isSocketRequest(ctx.req)) {
+    ctx.res.statusCode = 101;
+    ctx.res.setHeader('Connection', 'Upgrade');
+    ctx.res.setHeader('Upgrade', 'socket');    
+    socketHandler.handleUpgrade(ctx.req, ctx.res.socket);
+    return;
+  }
+
   try {
     await done(before && await before(ctx));
     after && await after(ctx);
   }
   catch (err) {
     ctx.end(errors.add(err, ctx), err.code || 500);
-    after && after(errors.get(0))
+    after && await after(errors.get(0))
   }
 };
 
@@ -63,21 +77,39 @@ const srvr = settings => {
 
 // ---> init server
 
-const routes = router.update;
-const route = router.updateOne;
-
 const expose = {
-  routes,
-  route,
-  use: route,
   resolveFolder,
   exit,
-  fetch,
-  log
+  socket: socketHandler.register.bind(socketHandler),
+  log,
 };
 
-const ruud = input => {
+expose.routes = function(routes) {
+  router.update(routes);
+  return this;
+};
 
+expose.route = function(path, fn) {
+  router.updateOne(path, fn);
+  return this;
+};
+
+let middlewareCounter = 0;
+expose.use = function(str, fn) {
+  router.updateOne(`MIDDLEWARE[${middlewareCounter++}]${fn ? str : ''}`, fn || str);
+  return this;
+};
+
+['get', 'post', 'put', 'delete'].forEach(method => {
+  expose[method] = function(path, fn) {
+    router.updateOne(method.toUpperCase() + normalize(path), fn);
+    return this;
+  };
+});
+
+// ---> init server
+
+const ruud = input => {
   const config = typeof input === 'object'
     ? input
     : typeof input === 'function'
@@ -85,28 +117,52 @@ const ruud = input => {
       : {};
 
   const settings = merge({}, preset, config);
-  const { port, host, routes } = settings;
+  const { port, host, routes, socket } = settings;
 
   if (!config.routes) {
-    preset.routes['/'] = () => 'serve the servants!';
+    router.updateOne('/', () => 'serve the servants!');
+  }
+
+  if (socket) {
+    /*
+      add route for client-side socket handler
+        /socket.js => global variable
+        /socket => export
+    */
+    routes['/socket.*'] = async ({ res, file }) => {
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      const module = await import('./client.js');
+
+      const _fn = module.default.toString();
+      const _name = 'createSocket';
+      
+      return file
+        ? `window.${_name} = ${_fn};` 
+        : `const _fn = ${_fn}; export const ${_name} = _fn; export default _fn;`;
+    };
   }
 
   router.update(routes);
   startupMessage(host, port);
 
   const instance = srvr(settings);
-  const sockets = new Set();
+  const connections = new Set();
 
-  instance.on('connection', socket => sockets.add(socket));
+  instance.on('connection', connection => connections.add(connection));
 
   /*
       graceful shut-down
   */
   exit.add('server', async function() {
-    for (const socket of sockets) {
-      socket.destroy();
-      sockets.delete(socket);
-      socket.unref();
+    for (const [connection, socket] of socketHandler.connections) {
+      socket.close();
+      socketHandler.connections.delete(connection);
+    }
+
+    for (const connection of connections) {
+      connection.destroy();
+      connections.delete(connection);
+      connection.unref();
     }
     return new Promise(r => instance.close(r));
   });
@@ -119,11 +175,9 @@ const ruud = input => {
 Object.assign(ruud, expose);
 
 export const server = input => ruud(input);
-export { routes as routes };
-export { route as route };
+export const routes = ruud.routes;
 export { resolveFolder as resolveFolder };
 export { exit as exit };
-export { fetch as fetch };
 export { log as log };
 
 export default ruud;
