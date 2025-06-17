@@ -1,10 +1,12 @@
 import { log } from './util.js';
 import { type } from './parsers.js';
 
+const allowedMethods = 'GET,HEAD,OPTIONS,POST,PUT,PATCH,DELETE';
+
 const options = (req, res) => {
   res.writeHead(204, {
-    'Access-Control-Allow-Origin': req.headers.origin,
-    'Access-Control-Allow-Methods': 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    'Access-Control-Allow-Origin': req.headers.origin || '*',
+    'Access-Control-Allow-Methods': allowedMethods,
     'Access-Control-Allow-Headers': req.headers['access-control-request-headers'] || 'Content-Type, Authorization',
     'Access-Control-Allow-Credentials': true
   });
@@ -16,16 +18,18 @@ const end = (req, res, payload = '', status = 200) => {
 
   // ---> short circuit certain responses
 
-  if (status === 204) return res.end();
+  if (status === 204) {
+    return res.end();
+  }
 
   // ---> resolve content type and set default headers
 
   const [contentType, result] = type(payload);
 
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.setHeader('Access-Control-Allow-Methods', allowedMethods);
   res.setHeader('Access-Control-Allow-Headers', '*');
   res.setHeader('Access-Control-Expose-Headers', 'Content-Type,Content-length');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,OPTIONS,PUT,POST,DELETE,PATCH');
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Max-Age', 600);
   res.setHeader('Content-Type', `${contentType}; charset=utf-8`);
@@ -39,12 +43,7 @@ const redirect = (res, Location, status = 301) => {
 
 const error = (req, res, object, status = 400) => {
   log('<red>error</red>', status, object, req.url);
-  if (object.throw) {
-    const err = new Error(object.error);
-    err.code = status;
-    throw err;
-  }
-  end(req, res, object.error || object.message || object, object.code || status);
+  end(req, res, { error: object.error || object.message || object }, object.code || status);
 }
 
 export {

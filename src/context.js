@@ -3,7 +3,7 @@ import { DEV, log } from './util.js';
 import { cookie, session } from './session.js';
 import { url, body } from './parsers.js';
 import { options, end, redirect, error } from './responses.js';
-import { fetch, stream } from './fetch.js';
+import { stream } from './fetch.js';
 
 import router from './router.js';
 import cache from './cache.js';
@@ -49,7 +49,6 @@ export default async (handler, settings, req, res) => {
     serve: (path, props) => resolveStatic(ctx, url(path), props),
     cache: (ttl, path) => cache(ctx, ttl, path),
 
-    fetch,
     stream: stream.bind(null, res),
 
     routes: router.update,
@@ -66,9 +65,15 @@ export default async (handler, settings, req, res) => {
 
   const done = async before => {
     const func = router(ctx) || (ctx.relative && resolveStatic) || settings.fallback;
-    const payload = cache.get(ctx)
-      || cache.set(ctx, func.constructor.name === 'AsyncFunction' ? await func(ctx) : func(ctx))
-      || before;
+    
+    // removed async check for code simplicity over perf (diff neglible)
+    // removed: func.constructor.name === 'AsyncFunction' ? await func(ctx) : func(ctx)
+    // add some day: res = func(), res instanceof Promise ? await res : res;
+    
+    const payload = cache.get(ctx) || cache.set(ctx, await func(ctx)) || before;
+    if (payload instanceof Error) {
+      throw (payload);
+    };
 
     if (payload instanceof Error) {
       throw (payload);
