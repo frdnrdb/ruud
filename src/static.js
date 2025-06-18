@@ -10,10 +10,14 @@ export const setRelative = (headers, session, url) => {
   const isRoot = header
     ? header === 'document' && headers['sec-fetch-mode'] === 'navigate'
     : /\.html$/.test(url);
+    
+  const isAsset = !isRoot && (header 
+    ? header.match(assetHeaderRegex) 
+    : url.match(assetFileRegex)); // NOT secFetchDest 'empty'
 
-  const isAsset = !isRoot && (header ? header.match(assetHeaderRegex) : url.match(assetFileRegex)); // NOT secFetchDest 'empty'
-  const relative = isAsset && session.static.get();    
-  return { 
+  const relative = isAsset && session.static.get();
+  
+  return {
     relative,
     relativeUrl: relative && `/${relative}${url}`,
     isRoot
@@ -40,36 +44,47 @@ const applyTemplate = (data, props) => {
 };
 
 export const resolveStatic = async (ctx, path, props) => {
-    try {
-        const params = path ? path.params : ctx.params;
-        ctx.isRoot && setRoot(ctx, params);
 
-        const { res, relative, file, error } = ctx;
-        const fileName = (path && path.file) || file;
+  /*
+  const inline = typeof path === 'string' ? path : path?.url;
+  if (isMarkup(inline)) {
+    return props ? applyTemplate(inline, props) : path;
+  }
+  */
+  
+  try {
+    const { res, file, relative, error } = ctx;
+    const fileName = (path && path.file) || file || 'index.html';
 
-        res.statusCode = 200;
-        res.setHeader('Content-Type', `${mimeType(fileName)}; charset=utf-8`);
-
-        relative && params.unshift(...relative.split('/'));
-
-        const location = join(process.cwd(), ...params, fileName || 'index.html');
-        const useTemplate = location.endsWith('.html') && props;
-
-        return new Promise(resolve => {
-            let data = '';
-            createReadStream(location) 
-                .on('data', chunk => {
-                  !useTemplate && res.write(chunk);
-                  data += chunk.toString()
-                })
-                .on('end', () => {
-                  useTemplate ? res.end(applyTemplate(data, props)) : res.end()
-                })
-                .on('close', () => resolve(data))
-                .on('error', () => resolve(error(`${location} not found`)))
-        });        
+    const params = path ? path.params : ctx.params;
+    if (ctx.isRoot || /\.html$/.test(fileName)) {
+      setRoot(ctx, params);
     }
-    catch(err) {
-        ctx.error(err.message);
-    }
+        
+    res.statusCode = 200;
+    res.setHeader('Content-Type', `${mimeType(fileName)}; charset=utf-8`);
+    
+    relative && params.unshift(...relative.split('/'));
+    
+    const relativeLocation = join(...params, fileName || 'index.html');
+    const location = join(process.cwd(), relativeLocation);
+    const useTemplate = location.endsWith('.html') && props;
+    
+    return new Promise(resolve => {
+      let data = '';
+      createReadStream(location) 
+      .on('data', chunk => {
+        !useTemplate && res.write(chunk);
+        data += chunk.toString()
+      })
+      .on('end', () => {
+        useTemplate ? res.end(applyTemplate(data, props)) : res.end()
+      })
+      .on('close', () => resolve(data))
+      .on('error', () => resolve(error(`${location} not found`)))
+    });        
+  }
+  catch(err) {
+    ctx.error(err.message);
+  }
 };

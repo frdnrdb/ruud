@@ -1,12 +1,26 @@
 import mimeType from './types.js';
 
-const url = url => {
-  if (!url) return;
-  const [path, search = ''] = url.split('?');
-  const params = path.replace(/^https?:\/\//, '').split('/').map(p => p.replace(/\.{2,}/g, '.')).filter(Boolean);
-  const file = /\w+\.\w+/.test(params[params.length - 1]) && params.pop(); //.toLowerCase();
-  const query = queryString(search);
-  return { url, params, file, query };
+const url = (url = '') => {
+  const o = {
+    url,
+    params: [],
+    query: {},
+    file: undefined
+  };
+
+  try {
+    const parsed = new URL(url, 'http://placeholder');
+
+    o.params = parsed.pathname
+      .split('/')
+      .map(p => p.replace(/\.{2,}/g, '.'))
+      .filter(Boolean);
+
+    o.file = /\w+\.\w+/.test(params.at(-1)) && params.pop();
+    o.query = Object.fromEntries(parsed.searchParams);
+  } catch {}
+
+  return o;
 };
 
 const buffer = (req, resolve, chunks = []) => {
@@ -57,6 +71,8 @@ const body = (req, settings) => new Promise(resolve => {
   bodyParserBuffer ? buffer(req, resolve) : parser(req, resolve);
 });
 
+const isMarkup = str => str && str.indexOf('<') !== -1 && /<[^>]+>[^<]+<\//.test(str);
+
 const type = (payload = '') => {
   if (!payload) {
     return ['text/plain', ''];
@@ -70,7 +86,7 @@ const type = (payload = '') => {
     return ['application/javascript', payload];
   }
   
-  if (payload.indexOf('<') !== -1 && /<[^>]+>[^<]+<\//.test(payload)) {
+  if (isMarkup(payload)) {
     return ['text/html', payload];
   }
   
@@ -126,6 +142,7 @@ const multipart = (body, contentType) => {
 export {
   url,
   body,
+  isMarkup,
   type,
   mimeType
 };

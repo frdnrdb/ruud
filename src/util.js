@@ -71,6 +71,21 @@ const flatten = (obj, sep = '', pre = '', flat = {}, recursive, k = '') => {
   return flat;
 };
 
+// ---> getProp('this.prop', { this: { prop: 'value' } }) => 'value'
+
+const getProp = (str, o) => {
+  if (typeof o !== 'object' || typeof str !== 'string' || !str.length) return str;
+
+  const arr = str.split(/[\[\]\?\.]/).filter(Boolean); // some.array[3]?.prop => [some, array, 3, prop]
+  for (let key of arr) {
+    if (o[key] === undefined) {
+      return;
+    }
+    o = o[key];
+  }
+  return o;
+};
+
 export {
   DEV,
   protocols,
@@ -83,5 +98,6 @@ export {
 
   normalize,
   merge,
-  flatten
+  flatten,
+  getProp
 };
