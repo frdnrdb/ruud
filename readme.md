@@ -6,9 +6,9 @@ the player who serves
 
 - **lightweight**: _no dependencies_
 - **intuitive/ opinionated**: _easy to use, fast_
-- **with**: _dotenv parser, router, body parser, static files server, optional route cache_
+- **with**: _dotenv parser, router, body parser, static files server, socket interface, optional route cache_
 - **see**: [context object](#ctx) _for more details_
-- **convenient** [utilities](#util): _folder-to-routes generator, fetch replacement, exit handler, dev logger_
+- **convenient** [utilities](#util): _folder-to-routes generator, exit handler, dev logger_
 
 #### install
 ```sh
@@ -19,65 +19,66 @@ npm i -S ruud
 ```js
 import app from 'ruud'
 
-// ---> ready 
+// ---> personal preference 
 
-app().routes({
-    '/serve': async ctx => 'the servants',
-})
-
-// ---> with some options
-
-app({ port: 4000, ...options }).routes({
-    '/serve': async ctx => 'the servants',
-})
-
-// ---> when one route does it
-
-app(async ctx => 'serve the servants')
-
-// ---> input func as fallback
-
-app(func).routes({
-    '/serve': async ctx => 'the servants',
-    '/receive': async ({ method, body }) => {
-        if (body) {
-            // parsed body
-            // aka. /POST|PUT|PATCH|DELETE/.test(method)
-        }
+app({
+    routes: {
+        '/': async ctx => {}
     }
 })
 
-// ---> initiate with options and routes
+// ---> alternative approach 
+
+app().routes({
+    '/': async ctx => {}
+})
+
+// ---> ultra minimal approach
+
+app(async ctx => {})
+
+// ---> initiate with options and routes (defaults listed)
 
 app({
     port: 80, 
     host: '0.0.0.0',
     protocol: 'http',
-    
-    fallback: undefined, // fallback for non existing routes
-    before: undefined, // before each route
-    after: undefined, // after each route
-    
-    routes: {}, 
+
+    options: {}, // https://nodejs.org/api/http.html#http_http_createserver_options_requestlistener
 
     bodyParser: true, // resolves ctx.body
     bodyParserBuffer: false, // resolves ctx.body as buffer if bodyParser is active
     fileSizeLimit: false, // POST|PUT|PATCH max size
 
-    options: {} // https://nodejs.org/api/http.html#http_http_createserver_options_requestlistener
+    socket: false, // socket interface
+
+    before: undefined, // before each route
+    after: undefined, // after each route (ctx.payload will contain route result)
+    fallback: undefined, // fallback for non existing routes
+
+    routes: {}
 })
 
-// ---> add more routes later
+// ---> methods to modify routes
 
 import ruud from 'ruud'
-const app = ruud()
 
-app.routes({
-    mellon: () => 'collie',
-    infinite: () => 'sadness'
+const app = ruud({ 
+  routes: {
+    '/': async ctx => 'serve the servants!'
+  } 
 })
 
-app.route('/we/have/no', () => 'bananas')
+app.routes({
+    '/serve': () => 'the servants' 
+})
+app.route('serve/the', () => 'servants!')
+app.get('serve/the/servants', () => '!') // app.post, app.put, app.delete
+
+// ---> middleware
+
+app.use(async (ctx, next) => await next())
+app.use('/cats/:name?', async (ctx, next) => await next())
 
 // ---> alternatively
 
@@ -86,14 +87,14 @@ const { instance, ...etc } = server()
 routes({})
 
 ```
-- Routes can be modified at any time calling the _routes_ method  (merge)
+- Routes can be modified at any time calling the _routes_ method (merge)
 - Returning _json_, _html_, _string_ etc. will automatically resolve proper content-type headers
 
 #### router
 ```js
 {
     '/user/:name/:preference?': ({ props }) => {
-        const { name, preference } = props;
+        const { name, preference = 'soft' } = props;
     },
     
     '/any/*/param', // any/inbetween/param
@@ -126,9 +127,9 @@ routes({})
 
 #### route cache (memory)
 ```js
-'/api/latest': async ({ cache, fetch }) => {
+'/api/latest': async ({ cache }) => {
     cache(minutes); // 0 will invalidate
-    return await fetch(latest);
+    return await fetch('something');
 }
 ```
 
@@ -179,7 +180,6 @@ routes, // update/ manipulate: routes({})
 cache, // cache(ttl, path?[optional, default current])
 cookies, // cookies.set(name, value, { expires[seconds, default 300], path[default '/'], SameSite[default 'none'], Secure[default true], domain, HttpOnly, ... }?), cookies.get(name), cookies.del(name)     
 
-fetch, // fetch(url, options?), default GET => JSON, options: { method, headers, body }
 stream, // return stream(imageUrl)
 
 settings, // returns current setup
@@ -217,33 +217,19 @@ exit.add('mongodb users', () => mongoose.connection.close())
 
 ```
 
-#### fetch method
-```js
-/*
-    • also included in the context object
-    • does not return a promise like native fetch
-
-    optional options: {
-        method: String,
-        headers: Object,
-        body: String,
-        raw: Boolean – return raw server response
-        buffer: Boolean - return as Buffer
-    }
-*/
-import { fetch } from 'ruud';
-
-const json = await fetch('https://api.com');
-const html = await fetch('https://google.com');
-```
-
 #### dev logger
 ```js
 // also included in the context object
 
 import { log } from 'ruud';
-log('development only')
+log('<cyan>development only</cyan>')
+log('<black><magenta>black text on magenta background</magenta></black>')
 ```
+
+#### socket
+
+- to be documented
+
 
 #### tip
 > ruud internal _"nodemon"_ implementation was removed (v1.1.0) in favour of native node watcher 
