@@ -5,8 +5,8 @@
     \x1Bc -> clear console
 */
 
-const PREFIX = '_  ';
-const BOX_PADDING = 2;
+const BOX_PADDING = 5;
+const PREFIX = '_'.padEnd(BOX_PADDING, ' ');
 const BORDER = ['┌', '┐', '┘', '└', '─', '│', ' ', '├', '┤'];
 
 const map = {
@@ -55,7 +55,7 @@ const makeBox = str => {
 
     const content = extractColors(text)
       .replace(/<hr>/g, '\n<hr>\n')
-      .split(/\n/) // support template sting newline
+      .split(/\n/) // support template string newline
       .map(str => str.trim()) // clean template string indent
       .filter(Boolean)
       .flatMap(str => str.replace(/(<br>)+/g, m => '\n'.repeat(m.length / 4)).split(/\n/))

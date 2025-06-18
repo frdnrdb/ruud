@@ -14,18 +14,23 @@ export default (DEV, log, envVars) => {
   const CLIENT_VERSION = process.env.npm_package_version;
 
   const startupMessage = (host, port) => {
-    const localUrl = `<cyan>${APP_NAME} @ ${APP_VERSION}</cyan> 🎾 <cyan>http://${host}:${port}</cyan>`;
+    const header = `${CLIENT_NAME} @ ${CLIENT_VERSION}`;
+    const footer = `<cyan>${APP_NAME} @ ${APP_VERSION}</cyan> 🎾 <cyan>http://${host}:${port}</cyan>`;
     
     if (process.argv.includes('--minimal')) {
-      return log(localUrl);
+      console.log();
+      log(header);
+      log(footer);
+      console.log();
+      return;
     }
 
     log(`
       <box yellow>
-        ${CLIENT_NAME} @ ${CLIENT_VERSION}
+        ${header}
         <hr>
         ${envVars.length ? ['process.env', ...envVars.map(n => `<magenta>${n}</magenta>`), '<hr>'].join('\n') : []}
-        ${localUrl}
+        ${footer}
       </box>
     `);
   };
