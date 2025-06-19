@@ -1,7 +1,7 @@
 export default async (path, options = {}) => {
   const url = /^wss?:\/\//.test(path)
     ? path
-    : `ws${location.protocol.substring(4)}//${location.host}${path.startsWith('/') ? path : '/' + path}`;
+    : `ws${location.protocol.substring(4)}//${options.host || location.host}${path.startsWith('/') ? path : '/' + path}`;
 
   const config = {
     autoReconnect: true,
