@@ -175,6 +175,7 @@ const ruud = input => {
 Object.assign(ruud, expose);
 
 export const server = input => ruud(input);
+export const socket = ruud.socket;
 export const routes = ruud.routes;
 export { resolveFolder as resolveFolder };
 export { exit as exit };
