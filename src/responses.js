@@ -4,13 +4,22 @@ import { type } from './parsers.js';
 const allowedMethods = 'GET,HEAD,OPTIONS,POST,PUT,PATCH,DELETE';
 
 const options = (req, res) => {
-  res.writeHead(204, {
-    'Access-Control-Allow-Origin': req.headers.origin || '*',
+  const origin = req.headers.origin;
+
+  const headers = {
     'Access-Control-Allow-Methods': allowedMethods,
     'Access-Control-Allow-Headers': req.headers['access-control-request-headers'] || 'Content-Type, Authorization',
-    'Access-Control-Allow-Credentials': true
-  });
-  return res.end();
+    'Access-Control-Max-Age': '600'
+  };
+
+  if (origin) {
+    headers['Access-Control-Allow-Origin'] = origin;
+    headers['Access-Control-Allow-Credentials'] = 'true';
+    headers['Vary'] = 'Origin';
+  }
+
+  res.writeHead(204, headers);
+  res.end();
 };
 
 const end = (req, res, payload = '', status = 200) => {
@@ -24,17 +33,22 @@ const end = (req, res, payload = '', status = 200) => {
 
   // ---> resolve content type and set default headers
 
-  const [contentType, result] = type(payload);
+  const [ contentType, result ] = type(payload);
+  const origin = req.headers.origin;
 
-  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.setHeader('Access-Control-Allow-Methods', allowedMethods);
-  res.setHeader('Access-Control-Allow-Headers', '*');
-  res.setHeader('Access-Control-Expose-Headers', 'Content-Type,Content-length');
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Max-Age', 600);
-  res.setHeader('Content-Type', `${contentType}; charset=utf-8`);
+  if (origin) {
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', allowedMethods);
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Type, Content-Length');
+    res.setHeader('Access-Control-Max-Age', '600');
+  }
+
+  res.setHeader('Content-Type', `${contentType}; charset=utf-8`);  
   res.end(result);
-};
+}
 
 const redirect = (res, Location, status = 301) => {
   res.writeHead(status, { Location });
