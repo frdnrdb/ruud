@@ -17,7 +17,7 @@ const url = (url = '') => {
       .filter(Boolean);
 
     o.file = /\w+\.\w+/.test(o.params.at(-1)) && o.params.pop();
-    o.query = Object.fromEntries(parsed.searchParams);
+    o.query = Object.fromEntries(parsed.searchParams.entries().map(([k,v]) => [k, v === '' ? true : v])); // ?hello => query.hello 
   } catch {}
 
   return o;
