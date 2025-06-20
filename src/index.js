@@ -132,13 +132,13 @@ const ruud = input => {
     routes['/socket.*'] = async ({ res, file }) => {
       res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
       const module = await import('./client.js');
-
       const _fn = module.default.toString();
       const _name = 'createSocket';
-      
-      return file
+
+      res.end(file
         ? `window.${_name} = ${_fn};` 
-        : `const _fn = ${_fn}; export const ${_name} = _fn; export default _fn;`;
+        : `const _fn = ${_fn}; export const ${_name} = _fn; export default _fn;`
+      );
     };
   }
 
