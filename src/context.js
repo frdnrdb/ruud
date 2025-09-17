@@ -64,7 +64,7 @@ export default async (handler, settings, req, res) => {
   };
 
   const done = async before => {
-    const func = router(ctx) || (ctx.relative && resolveStatic) || settings.fallback;
+    const func = (ctx.relative && resolveStatic) || router(ctx) || settings.fallback;
     
     // removed async check for code simplicity over perf (diff neglible)
     // removed: func.constructor.name === 'AsyncFunction' ? await func(ctx) : func(ctx)

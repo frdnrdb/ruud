@@ -24,7 +24,7 @@ const router = ctx => {
   let selected;
   
   for (const r of router.handlers) {
-    if (r.method !== ctx.method) continue;
+    if (r.specificMethod && r.method !== ctx.method) continue;
     if (!r.match.test(path)) continue;
     selected = r;
     break;
@@ -76,6 +76,7 @@ const parseRoute = (route, func) => {
   
   const methodRegex = /(GET|POST|PUT|DELETE|(MIDDLEWARE)(\[\d+\]))\/?/;
   route = route.replace(methodRegex, (_, method, middleware, id) => {
+    o.specificMethod = !!method;
     middleware 
       ? (o.middleware = true, o.idx = Number(id.slice(1, -1)))
       : o.method = method;
