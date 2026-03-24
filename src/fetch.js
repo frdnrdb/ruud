@@ -106,6 +106,7 @@ const stream = (serverRes, url, options = {}) => fetch(url, options, (resolve, r
 
   try {
     serverRes.setHeader('Content-Type', res.headers['content-type']);
+    res.headers['content-encoding'] && serverRes.setHeader('Content-Encoding', res.headers['content-encoding']);
     res.on('error', ({ message }) => reject({ error: message }));
     res.on('data', chunk => serverRes.write(chunk));
     res.on('end', () => resolve(serverRes.end()));
