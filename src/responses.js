@@ -50,7 +50,7 @@ const end = (req, res, payload = '', status = 200) => {
   res.end(result);
 }
 
-const redirect = (res, Location, status = 301) => {
+const redirect = (res, Location, status = 302) => {
   res.writeHead(status, { Location });
   res.end();
 }
